@@ -1,0 +1,59 @@
+.pgm-semantic-link {
+  color: var(--text-accent);
+  font-weight: 600;
+  text-decoration: underline;
+  text-decoration-style: dotted;
+}
+
+.pgm-suggestion {
+  font-family: var(--font-monospace);
+  letter-spacing: 0;
+}
+
+.pgm-modal {
+  min-width: min(860px, 92vw);
+}
+
+.pgm-graph-viewer {
+  border: 1px solid var(--background-modifier-border);
+  border-radius: 8px;
+  background: var(--background-primary);
+  overflow: hidden;
+}
+
+.pgm-graph-svg {
+  display: block;
+  width: 100%;
+  height: min(520px, 70vh);
+}
+
+.pgm-edge {
+  stroke: var(--text-muted);
+  stroke-width: 1.6;
+}
+
+.pgm-edge-arrow {
+  fill: var(--text-muted);
+}
+
+.pgm-edge-label {
+  fill: var(--text-normal);
+  font-family: var(--font-monospace);
+  font-size: 12px;
+  text-anchor: middle;
+  paint-order: stroke;
+  stroke: var(--background-primary);
+  stroke-width: 4px;
+}
+
+.pgm-node {
+  fill: var(--interactive-accent);
+  stroke: var(--background-primary);
+  stroke-width: 3px;
+}
+
+.pgm-node-label {
+  fill: var(--text-normal);
+  font-size: 12px;
+  text-anchor: middle;
+}

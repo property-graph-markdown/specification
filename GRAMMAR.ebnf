@@ -1,0 +1,23 @@
+(* Property Graph Markdown 0.1 relationship-label grammar. *)
+
+SemanticRelationshipLabel ::=
+    RelationshipType PropertyMap? Direction DisplayLabel ;
+
+RelationshipType ::=
+    Identifier ;
+
+Identifier ::=
+    Letter (Letter | Digit | "_")* ;
+
+Direction ::=
+      "->"
+    | "<-" ;
+
+PropertyMap ::=
+    YAMLFlowMapping ;
+
+DisplayLabel ::=
+    Character+ ;
+
+(* PropertyMap delegates to YAML 1.2 Flow Mapping. *)
+(* This grammar intentionally defines no Markdown block syntax. *)

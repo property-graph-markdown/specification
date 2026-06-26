@@ -1,0 +1,33 @@
+cases:
+  - name: outgoing relationship
+    markdown: |
+      [KNOWS -> Bob](bob.md)
+    relationships:
+      - source: alice.md
+        type: KNOWS
+        target: bob.md
+
+  - name: incoming relationship
+    markdown: |
+      [APPROVED_BY <- Invoice](invoice.md)
+    relationships:
+      - source: invoice.md
+        type: APPROVED_BY
+        target: peter.md
+
+  - name: relationship properties
+    markdown: |
+      [APPROVED_BY {date: 2026-06-26, confidence: 0.98} -> Peter](peter.md)
+    properties:
+      date: 2026-06-26
+      confidence: 0.98
+
+  - name: ordinary hyperlink
+    markdown: |
+      [Read the invoice](invoice.md)
+    relationships: []
+
+  - name: malformed semantic relationship
+    markdown: |
+      [-> Missing type](target.md)
+    warnings: true
