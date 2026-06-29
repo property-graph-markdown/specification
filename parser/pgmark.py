@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Reference parser for Property Graph Markdown 0.1.1.
+"""Reference parser for Property Graph Markdown 0.1.2.
 
 The implementation favors readability over completeness. It parses a directory
 of Markdown files, interprets YAML frontmatter as node metadata, extracts
@@ -28,7 +28,7 @@ from markdown_it import MarkdownIt  # type: ignore
 
 IDENTIFIER_RE = re.compile(r"^[A-Za-z][A-Za-z0-9_]*$")
 DATE_RE = re.compile(r"^\d{4}-\d{2}-\d{2}$")
-SEMANTIC_RE = re.compile(r"^(?P<type>[A-Z][A-Z0-9_]*)\s*(?P<props>\{.*\})?\s*$")
+SEMANTIC_RE = re.compile(r"^:(?P<type>[A-Za-z][A-Za-z0-9_]*)\s*(?P<props>\{.*\})?\s*$")
 
 
 @dataclass
@@ -133,7 +133,7 @@ def parse_node_metadata(frontmatter: str) -> Tuple[List[str], Dict[str, Any]]:
 
 def parse_relationship_label(label: str) -> Tuple[str, Dict[str, Any]]:
     if "->" in label or "<-" in label:
-        raise ValueError("direction markers are not supported in PGM 0.1.1")
+        raise ValueError("direction markers are not supported in PGM 0.1.2")
 
     match = SEMANTIC_RE.match(label.strip())
     if not match:
@@ -156,7 +156,7 @@ def _looks_like_relationship_attempt(label: str) -> bool:
     return (
         "->" in stripped
         or "<-" in stripped
-        or bool(re.match(r"^[A-Z][A-Z0-9_]*\s*\{", stripped))
+        or stripped.startswith(":")
     )
 
 

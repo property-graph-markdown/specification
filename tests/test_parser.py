@@ -23,7 +23,7 @@ class ParserTests(unittest.TestCase):
     def test_outgoing_relationship(self):
         graph = self.parse_files(
             {
-                "alice.md": "---\nlabels: [Person]\n---\n[KNOWS](bob.md)\n",
+                "alice.md": "---\nlabels: [Person]\n---\n[:knows](bob.md)\n",
                 "bob.md": "---\nlabels: [Person]\n---\n# Bob\n",
             }
         )
@@ -32,13 +32,13 @@ class ParserTests(unittest.TestCase):
         rel = graph.relationships[0]
         self.assertEqual(rel.source, "alice.md")
         self.assertEqual(rel.target, "bob.md")
-        self.assertEqual(rel.type, "KNOWS")
+        self.assertEqual(rel.type, "knows")
 
     def test_direction_marker_warns_and_skips(self):
         graph = self.parse_files(
             {
                 "invoice.md": "---\nlabels: [Invoice]\n---\n# Invoice\n",
-                "peter.md": "---\nlabels: [Person]\n---\n[APPROVED_BY -> Invoice](invoice.md)\n",
+                "peter.md": "---\nlabels: [Person]\n---\n[:approvedBy -> Invoice](invoice.md)\n",
             }
         )
 
@@ -51,13 +51,14 @@ class ParserTests(unittest.TestCase):
             {
                 "invoice.md": (
                     "---\nlabels: [Invoice]\n---\n"
-                    "[APPROVED_BY {date: 2026-06-26, confidence: 0.98}](peter.md)\n"
+                    "[:approvedBy {date: 2026-06-26, confidence: 0.98}](peter.md)\n"
                 ),
                 "peter.md": "---\nlabels: [Person]\n---\n# Peter\n",
             }
         )
 
         rel = graph.relationships[0]
+        self.assertEqual(rel.type, "approvedBy")
         self.assertEqual(rel.properties["date"], "2026-06-26")
         self.assertEqual(rel.properties["confidence"], 0.98)
 
@@ -78,7 +79,7 @@ class ParserTests(unittest.TestCase):
     def test_malformed_semantic_relationship_warns_and_skips(self):
         graph = self.parse_files(
             {
-                "a.md": "---\nlabels: [Thing]\n---\n[APPROVED_BY {date](b.md)\n",
+                "a.md": "---\nlabels: [Thing]\n---\n[:approvedBy {date](b.md)\n",
                 "b.md": "# B\n",
             }
         )

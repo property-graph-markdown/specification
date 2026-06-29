@@ -17,12 +17,12 @@ PGM interprets an ordinary Markdown corpus as a Property Graph:
 1. One Markdown file is one graph node.
 2. YAML frontmatter defines node labels and node properties.
 3. Ordinary CommonMark links define outgoing relationships when their visible label is a relationship descriptor.
-4. A relationship descriptor is an uppercase relationship type plus an optional YAML flow mapping.
+4. A relationship descriptor is `:` plus a relationship type and an optional YAML flow mapping.
 5. The link destination is canonical and identifies the target node.
 
 That is the whole core language.
 
-PGM 0.1.1 intentionally defines only outgoing relationships. A relationship is authored once, in the Markdown file representing its source node. This prevents conflicting definitions of the same edge across two files.
+PGM 0.1.2 intentionally defines only outgoing relationships. A relationship is authored once, in the Markdown file representing its source node. This prevents conflicting definitions of the same edge across two files.
 
 ```markdown
 ---
@@ -33,8 +33,8 @@ currency: CHF
 ---
 # Invoice 2026-001
 
-[APPROVED_BY {date: 2026-06-26}](Peter%20Meier.md)
-[PART_OF](Project%20Apollo.md)
+[:approvedBy {date: 2026-06-26}](Peter%20Meier.md)
+[:partOf](Project%20Apollo.md)
 ```
 
 The document remains Markdown. Existing editors, renderers, search tools, diff tools, and static site generators continue to work.
@@ -46,8 +46,8 @@ graph LR
     invoice["Invoice 2026-001.md<br/>:Invoice :Document"]
     peter["Peter Meier.md"]
     project["Project Apollo.md"]
-    invoice -- "APPROVED_BY {date: 2026-06-26}" --> peter
-    invoice -- "PART_OF" --> project
+    invoice -- "approvedBy {date: 2026-06-26}" --> peter
+    invoice -- "partOf" --> project
 ```
 
 ## Generated openCypher
@@ -59,11 +59,11 @@ SET
     n.amount = 1532,
     n.currency = "CHF"
 MERGE (p {id:"Peter Meier.md"})
-MERGE (n)-[:APPROVED_BY {
+MERGE (n)-[:approvedBy {
     date: date("2026-06-26")
 }]->(p)
 MERGE (q {id:"Project Apollo.md"})
-MERGE (n)-[:PART_OF]->(q)
+MERGE (n)-[:partOf]->(q)
 ```
 
 ## Installation
@@ -104,7 +104,7 @@ print(graph_to_cypher(graph))
 ## Project Layout
 
 ```text
-SPEC.md              Normative 0.1.1 draft specification
+SPEC.md              Normative 0.1.2 draft specification
 RATIONALE.md         Design rationale
 GRAMMAR.ebnf         Minimal relationship-label grammar
 examples/            Small coherent Invoice-Person-Project graph
@@ -115,13 +115,13 @@ obsidian-plugin/     Minimal Obsidian editor integration
 
 ## Roadmap
 
-PGM 0.1.1 focuses only on the smallest useful core:
+PGM 0.1.2 focuses only on the smallest useful core:
 
 - Core specification
 - Reference parser
 - Obsidian plugin
 
-Future ideas such as namespaces, ontology validation, RDF export, embedded graph queries, and inference rules are intentionally excluded from 0.1.1. They can be explored only after the core remains simple, interoperable, and obvious.
+Future ideas such as namespaces, ontology validation, RDF export, embedded graph queries, and inference rules are intentionally excluded from 0.1.2. They can be explored only after the core remains simple, interoperable, and obvious.
 
 ## Guiding Principle
 

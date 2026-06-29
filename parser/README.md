@@ -1,6 +1,6 @@
 # PGM Reference Parser
 
-`pgmark.py` is the small Python reference parser for Property Graph Markdown 0.1.1.
+`pgmark.py` is the small Python reference parser for Property Graph Markdown 0.1.2.
 
 It performs four steps:
 

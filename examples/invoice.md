@@ -7,8 +7,8 @@ currency: CHF
 ---
 # Invoice 2026-001
 
-[APPROVED_BY {date: 2026-06-26}](peter-meier.md)
+[:approvedBy {date: 2026-06-26}](peter-meier.md)
 
-[PART_OF](project-apollo.md)
+[:partOf](project-apollo.md)
 
 This invoice was approved for Project Apollo.

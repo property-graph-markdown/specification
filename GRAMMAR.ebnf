@@ -1,16 +1,16 @@
-(* Property Graph Markdown 0.1 relationship-label grammar. *)
+(* Property Graph Markdown 0.1.2 relationship-label grammar. *)
 
 SemanticRelationshipLabel ::=
     RelationshipDescriptor ;
 
 RelationshipDescriptor ::=
-    RelationshipType PropertyMap? ;
+    ":" RelationshipType PropertyMap? ;
 
 RelationshipType ::=
-    UppercaseIdentifier ;
+    Identifier ;
 
-UppercaseIdentifier ::=
-    UppercaseLetter (UppercaseLetter | Digit | "_")* ;
+Identifier ::=
+    Letter (Letter | Digit | "_")* ;
 
 PropertyMap ::=
     YAMLFlowMapping ;

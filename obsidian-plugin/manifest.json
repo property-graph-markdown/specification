@@ -1,10 +1,10 @@
 {
   "id": "property-graph-markdown",
   "name": "Property Graph Markdown",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "minAppVersion": "1.5.0",
   "description": "Syntax highlighting, autocomplete, vault scan, and graph visualization for Property Graph Markdown.",
   "author": "Property Graph Markdown contributors",
-  "authorUrl": "https://github.com/property-graph-markdown/property-graph-markdown",
+  "authorUrl": "https://github.com/property-graph-markdown/specification",
   "isDesktopOnly": false
 }

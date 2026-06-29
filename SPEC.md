@@ -1,8 +1,8 @@
-# Property Graph Markdown (PGM) 0.1.1 Public Draft
+# Property Graph Markdown (PGM) 0.1.2 Public Draft
 
 ## Status
 
-This document defines Property Graph Markdown (PGM) version 0.1.1 Public Draft.
+This document defines Property Graph Markdown (PGM) version 0.1.2 Public Draft.
 
 PGM is an open, vendor-neutral specification for representing openCypher-compatible Property Graphs in CommonMark.
 
@@ -75,17 +75,17 @@ The hyperlink destination SHALL define the related node identifier.
 
 The visible link label SHALL define the relationship descriptor. The relationship descriptor SHALL contain the relationship type and MAY contain relationship properties.
 
-PGM 0.1.1 only defines outgoing relationships. The relationship SHALL be authored in the Markdown file that represents the source node.
+PGM 0.1.2 only defines outgoing relationships. The relationship SHALL be authored in the Markdown file that represents the source node.
 
 Example:
 
 ```markdown
-[APPROVED_BY](Peter%20Meier.md)
+[:approvedBy](Peter%20Meier.md)
 ```
 
-This defines an outgoing relationship of type `APPROVED_BY` from the current document node to `Peter Meier.md`.
+This defines an outgoing relationship of type `approvedBy` from the current document node to `Peter Meier.md`.
 
-PGM 0.1.1 does not define direction-marker syntax. A label containing `->` or `<-` SHALL NOT create a PGM relationship.
+PGM 0.1.2 does not define direction-marker syntax. A label containing `->` or `<-` SHALL NOT create a PGM relationship.
 
 This restriction avoids redundant syntax and duplicate or conflicting definitions of the same relationship across two Markdown files.
 
@@ -98,24 +98,26 @@ SemanticRelationshipLabel ::=
     RelationshipDescriptor
 
 RelationshipDescriptor ::=
-    RelationshipType PropertyMap?
+    ":" RelationshipType PropertyMap?
 
-RelationshipType ::= UppercaseIdentifier
+RelationshipType ::= Identifier
 
-UppercaseIdentifier ::= UppercaseLetter (UppercaseLetter | Digit | "_")*
+Identifier ::= Letter (Letter | Digit | "_")*
 
 PropertyMap ::= YAMLFlowMapping
 ```
+
+Relationship types SHALL be case-sensitive. Uppercase relationship types MAY be used by convention, but are not required by this specification.
 
 `PropertyMap` SHALL be a YAML 1.2 flow mapping.
 
 Example:
 
 ```markdown
-[APPROVED_BY {date: 2026-06-26}](Peter%20Meier.md)
+[:approvedBy {date: 2026-06-26}](Peter%20Meier.md)
 ```
 
-The relationship type is `APPROVED_BY`. The relationship property map contains `date: 2026-06-26`. The relationship target is `Peter Meier.md`.
+The relationship type is `approvedBy`. The relationship property map contains `date: 2026-06-26`. The relationship target is `Peter Meier.md`.
 
 ## Processing Model
 
@@ -148,12 +150,12 @@ A Markdown renderer that does not understand PGM SHALL still render PGM document
 
 ## Conformance
 
-A document conforms to PGM 0.1.1 if:
+A document conforms to PGM 0.1.2 if:
 
 - it is valid CommonMark;
 - any node metadata intended for PGM is encoded as YAML frontmatter;
 - any semantic relationship labels follow the grammar in this specification.
 
-A processor conforms to PGM 0.1.1 if it implements the processing model above and preserves the semantics defined by the abstract information model.
+A processor conforms to PGM 0.1.2 if it implements the processing model above and preserves the semantics defined by the abstract information model.
 
-Extensions MAY be implemented, but they SHALL NOT change the meaning of conforming PGM 0.1.1 documents.
+Extensions MAY be implemented, but they SHALL NOT change the meaning of conforming PGM 0.1.2 documents.

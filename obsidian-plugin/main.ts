@@ -29,15 +29,15 @@ interface PgmRelationship {
 }
 
 const DEFAULT_RELATIONSHIP_TYPES = [
-  "APPROVED_BY",
-  "PART_OF",
-  "MEMBER_OF",
-  "DEPENDS_ON",
-  "RELATES_TO"
+  "approvedBy",
+  "partOf",
+  "memberOf",
+  "dependsOn",
+  "relatesTo"
 ];
 
 const semanticLinkMatcher = new MatchDecorator({
-  regexp: /\[[A-Z][A-Z0-9_]*(?:\s*\{[^\]\n]*\})?\]\([^)]+\)/g,
+  regexp: /\[:[A-Za-z][A-Za-z0-9_]*(?:\s*\{[^\]\n]*\})?\]\([^)]+\)/g,
   decoration: Decoration.mark({ class: "pgm-semantic-link" })
 });
 
@@ -123,7 +123,7 @@ class PgmRelationshipSuggest extends EditorSuggest<string> {
 
   onTrigger(cursor: EditorPosition, editor: Editor, _file: TFile | null): EditorSuggestTriggerInfo | null {
     const prefix = editor.getLine(cursor.line).slice(0, cursor.ch);
-    const match = prefix.match(/\[([A-Za-z_][A-Za-z0-9_]*)?$/);
+    const match = prefix.match(/\[:([A-Za-z_][A-Za-z0-9_]*)?$/);
     if (!match) {
       return null;
     }
@@ -137,10 +137,10 @@ class PgmRelationshipSuggest extends EditorSuggest<string> {
   }
 
   getSuggestions(context: EditorSuggestContext): string[] {
-    const query = context.query.toUpperCase();
+    const query = context.query.toLowerCase();
     return Array.from(this.plugin.relationshipTypes)
       .sort()
-      .filter((type) => type.startsWith(query))
+      .filter((type) => type.toLowerCase().startsWith(query))
       .slice(0, 20);
   }
 
@@ -217,7 +217,7 @@ function parseSemanticLabel(label: string): {
   display: string;
   properties: Record<string, string>;
 } | null {
-  const match = label.trim().match(/^([A-Z][A-Z0-9_]*)(?:\s*(\{.*\}))?$/);
+  const match = label.trim().match(/^:([A-Za-z][A-Za-z0-9_]*)(?:\s*(\{.*\}))?$/);
   if (!match) {
     return null;
   }
@@ -263,11 +263,12 @@ function renderLinksAsLabelAndDestination(root: HTMLElement) {
       continue;
     }
 
-    const label = link.textContent?.trim() ?? "";
+    const rawLabel = link.textContent?.trim() ?? "";
     const destination = readableDestination(link);
-    if (!label || !destination || label === destination) {
+    if (!rawLabel || !destination || rawLabel === destination) {
       continue;
     }
+    const label = parseSemanticLabel(rawLabel) ? rawLabel.slice(1) : rawLabel;
 
     const labelEl = document.createElement("span");
     labelEl.classList.add("pgm-link-label");

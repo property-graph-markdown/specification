@@ -1,6 +1,6 @@
 # Property Graph Markdown for Obsidian
 
-This is a minimal Obsidian plugin for Property Graph Markdown 0.1.1.
+This is a minimal Obsidian plugin for Property Graph Markdown 0.1.2.
 
 It provides:
 
@@ -43,5 +43,5 @@ For local testing, copy `main.js`, `manifest.json`, and `styles.css` into an Obs
 The plugin recognizes links such as:
 
 ```markdown
-[APPROVED_BY {date: 2026-06-26}](peter-meier.md)
+[:approvedBy {date: 2026-06-26}](peter-meier.md)
 ```

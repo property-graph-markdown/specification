@@ -1,18 +1,18 @@
 # Roadmap
 
-## PGM 0.1.1
+## PGM 0.1.2
 
-PGM 0.1.1 defines the smallest useful core:
+PGM 0.1.2 defines the smallest useful core:
 
 - Core specification
 - Reference parser
 - Obsidian plugin
 
-The 0.1.1 goal is interoperability, not feature breadth.
+The 0.1.2 goal is interoperability, not feature breadth.
 
 ## Future Ideas
 
-The following ideas are intentionally excluded from version 0.1.1:
+The following ideas are intentionally excluded from version 0.1.2:
 
 - namespaces
 - ontology validation
@@ -22,9 +22,9 @@ The following ideas are intentionally excluded from version 0.1.1:
 
 These may be explored after the core syntax and information model have proven stable.
 
-## Non-Goals for 0.1.1
+## Non-Goals for 0.1.2
 
-PGM 0.1.1 does not define:
+PGM 0.1.2 does not define:
 
 - a Markdown replacement
 - a graph database
@@ -34,4 +34,4 @@ PGM 0.1.1 does not define:
 - an ontology language
 - a synchronization protocol
 
-PGM 0.1.1 only defines how a CommonMark corpus can be interpreted as an openCypher-compatible Property Graph.
+PGM 0.1.2 only defines how a CommonMark corpus can be interpreted as an openCypher-compatible Property Graph.

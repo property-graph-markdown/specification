@@ -12,8 +12,8 @@ MERGE (n2:Project {id:"project-apollo.md"})
 SET
     n2.name = "Project Apollo",
     n2.status = "active"
-MERGE (n0)-[:APPROVED_BY {
+MERGE (n0)-[:approvedBy {
     date: date("2026-06-26")
 }]->(n1)
-MERGE (n0)-[:PART_OF]->(n2)
-MERGE (n1)-[:MEMBER_OF]->(n2)
+MERGE (n0)-[:partOf]->(n2)
+MERGE (n1)-[:memberOf]->(n2)
