@@ -6,7 +6,7 @@ It performs four steps:
 
 1. Recursively scans Markdown files.
 2. Parses YAML frontmatter into node labels and node properties.
-3. Extracts CommonMark links whose visible label contains `->` or `<-`.
+3. Extracts CommonMark links whose visible label contains `->`.
 4. Emits openCypher-compatible statements.
 
 ## Install

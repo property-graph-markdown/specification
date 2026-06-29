@@ -7,13 +7,11 @@ cases:
         type: KNOWS
         target: bob.md
 
-  - name: incoming relationship
+  - name: incoming relationship syntax
     markdown: |
       [APPROVED_BY <- Invoice](invoice.md)
-    relationships:
-      - source: invoice.md
-        type: APPROVED_BY
-        target: peter.md
+    relationships: []
+    warnings: true
 
   - name: relationship properties
     markdown: |

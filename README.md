@@ -16,11 +16,13 @@ PGM interprets an ordinary Markdown corpus as a Property Graph:
 
 1. One Markdown file is one graph node.
 2. YAML frontmatter defines node labels and node properties.
-3. Ordinary CommonMark links define relationships when their visible label contains `->` or `<-`.
+3. Ordinary CommonMark links define outgoing relationships when their visible label contains `->`.
 4. YAML flow mappings inside semantic link labels define relationship properties.
 5. The link destination is canonical. The display label is for humans.
 
 That is the whole core language.
+
+PGM 0.1 intentionally defines only outgoing relationships. A relationship is authored once, in the Markdown file representing its source node. This prevents conflicting definitions of the same edge across two files.
 
 ```markdown
 ---
@@ -69,8 +71,8 @@ MERGE (n)-[:PART_OF]->(q)
 Clone the repository and install the reference parser dependencies:
 
 ```sh
-git clone https://github.com/property-graph-markdown/property-graph-markdown.git
-cd property-graph-markdown
+git clone https://github.com/property-graph-markdown/specification.git
+cd specification
 python -m pip install -r parser/requirements.txt
 ```
 

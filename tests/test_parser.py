@@ -34,7 +34,7 @@ class ParserTests(unittest.TestCase):
         self.assertEqual(rel.target, "bob.md")
         self.assertEqual(rel.type, "KNOWS")
 
-    def test_incoming_relationship(self):
+    def test_incoming_relationship_syntax_warns_and_skips(self):
         graph = self.parse_files(
             {
                 "invoice.md": "---\nlabels: [Invoice]\n---\n# Invoice\n",
@@ -42,11 +42,9 @@ class ParserTests(unittest.TestCase):
             }
         )
 
-        self.assertEqual(len(graph.relationships), 1)
-        rel = graph.relationships[0]
-        self.assertEqual(rel.source, "invoice.md")
-        self.assertEqual(rel.target, "peter.md")
-        self.assertEqual(rel.type, "APPROVED_BY")
+        self.assertEqual(graph.relationships, [])
+        self.assertEqual(len(graph.warnings), 1)
+        self.assertIn("incoming relationship syntax is not supported", graph.warnings[0])
 
     def test_relationship_properties(self):
         graph = self.parse_files(

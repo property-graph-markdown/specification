@@ -20,13 +20,19 @@ Using ordinary hyperlinks means PGM works in existing Markdown tools without plu
 
 The link remains useful to humans even when no graph processor is present.
 
-## Why Arrows?
+## Why an Outgoing Arrow?
 
 Property Graph relationships are directed. Arrows are already the common visual notation for direction.
 
-PGM uses `->` and `<-` because they are ASCII, readable, easy to type, and already familiar from graph query languages and diagrams.
+PGM uses `->` because it is ASCII, readable, easy to type, and already familiar from graph query languages and diagrams.
 
 The direction marker is the smallest syntax needed to distinguish an ordinary Markdown link from a typed graph relationship.
+
+PGM 0.1 intentionally does not define `<-`.
+
+Allowing both incoming and outgoing relationship syntax would make two Markdown files potential authorities for the same graph edge. For example, `invoice.md` could define an outgoing `APPROVED_BY` relationship to `peter.md`, while `peter.md` could define an incoming `APPROVED_BY` relationship from `invoice.md` with different properties. That would require conflict-resolution rules, merge semantics, or precedence rules.
+
+PGM avoids that complexity. A relationship is authored once, in the source node document, using `->`.
 
 ## Why YAML?
 

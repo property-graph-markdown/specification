@@ -25,6 +25,7 @@ Property Graphs enrich knowledge by assigning explicit types, direction, and opt
 5. Human readability SHOULD be preferred over compact syntax.
 6. Every additional grammar rule SHOULD be justified.
 7. Existing standards SHOULD be reused wherever possible.
+8. Each relationship SHOULD have exactly one authoritative source in the corpus.
 
 ## Abstract Information Model
 
@@ -68,11 +69,13 @@ This represents one node with labels `Invoice` and `Document` and properties `st
 
 ## Relationship Representation
 
-A CommonMark hyperlink whose visible label contains `->` or `<-` SHALL be interpreted as a semantic relationship.
+A CommonMark hyperlink whose visible label contains `->` SHALL be interpreted as a semantic relationship.
 
 The hyperlink destination SHALL define the related node identifier. The visible display label after the direction marker is human-readable only and SHALL NOT define the canonical target.
 
 The relationship type SHALL appear before the direction marker.
+
+PGM 0.1 only defines outgoing relationships. The relationship SHALL be authored in the Markdown file that represents the source node.
 
 Example:
 
@@ -82,13 +85,9 @@ Example:
 
 This defines an outgoing relationship of type `APPROVED_BY` from the current document node to `Peter Meier.md`.
 
-Example:
+PGM 0.1 does not define incoming relationship syntax. A label containing `<-` SHALL NOT create a PGM relationship.
 
-```markdown
-[APPROVED_BY <- Invoice 2026-001](Invoice%202026-001.md)
-```
-
-This defines an incoming relationship of type `APPROVED_BY` from `Invoice 2026-001.md` to the current document node.
+This restriction avoids duplicate or conflicting definitions of the same relationship across two Markdown files.
 
 ## Relationship Grammar
 
@@ -102,7 +101,7 @@ RelationshipType ::= Identifier
 
 Identifier ::= Letter (Letter | Digit | "_")*
 
-Direction ::= "->" | "<-"
+Direction ::= "->"
 
 PropertyMap ::= YAMLFlowMapping
 
@@ -129,12 +128,14 @@ A conforming processor SHALL:
 4. Assign node labels from the reserved `labels` property.
 5. Assign all other frontmatter entries as node properties.
 6. Parse CommonMark hyperlinks.
-7. Treat only hyperlinks whose visible label contains `->` or `<-` as semantic relationships.
+7. Treat only hyperlinks whose visible label contains `->` as semantic relationships.
 8. Parse semantic relationship labels according to the grammar.
 9. Resolve hyperlink destinations to canonical node identifiers.
 10. Emit, store, or expose an openCypher-compatible Property Graph.
 
 A conforming processor SHOULD ignore ordinary hyperlinks.
+
+A conforming processor SHOULD report apparent incoming relationship labels that use `<-` as non-conforming without creating a relationship.
 
 A conforming processor SHOULD report malformed semantic relationships without rejecting the entire document.
 

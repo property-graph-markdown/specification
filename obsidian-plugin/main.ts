@@ -20,7 +20,7 @@ import {
   ViewUpdate
 } from "@codemirror/view";
 
-type Direction = "->" | "<-";
+type Direction = "->";
 
 interface PgmRelationship {
   source: string;
@@ -40,7 +40,7 @@ const DEFAULT_RELATIONSHIP_TYPES = [
 ];
 
 const semanticLinkMatcher = new MatchDecorator({
-  regexp: /\[[^\]\n]*(?:->|<-)[^\]\n]*\]\([^)]+\)/g,
+  regexp: /\[[^\]\n]*->[^\]\n]*\]\([^)]+\)/g,
   decoration: Decoration.mark({ class: "pgm-semantic-link" })
 });
 
@@ -187,7 +187,7 @@ class PgmGraphModal extends Modal {
 
 function extractRelationships(sourcePath: string, text: string): PgmRelationship[] {
   const relationships: PgmRelationship[] = [];
-  const linkRe = /\[([^\]\n]*(?:->|<-)[^\]\n]*)\]\(([^)]+)\)/g;
+  const linkRe = /\[([^\]\n]*->[^\]\n]*)\]\(([^)]+)\)/g;
   let match: RegExpExecArray | null;
 
   while ((match = linkRe.exec(text)) !== null) {
@@ -199,12 +199,10 @@ function extractRelationships(sourcePath: string, text: string): PgmRelationship
     }
 
     const targetPath = normalizeDestination(sourcePath, destination);
-    const source = parsed.direction === "->" ? sourcePath : targetPath;
-    const target = parsed.direction === "->" ? targetPath : sourcePath;
 
     relationships.push({
-      source,
-      target,
+      source: sourcePath,
+      target: targetPath,
       type: parsed.type,
       direction: parsed.direction,
       display: parsed.display,
@@ -221,14 +219,13 @@ function parseSemanticLabel(label: string): {
   display: string;
   properties: Record<string, string>;
 } | null {
-  const match = label.trim().match(/^(.*?)\s*(->|<-)\s*(.+)$/);
+  const match = label.trim().match(/^(.*?)\s*->\s*(.+)$/);
   if (!match) {
     return null;
   }
 
   const head = match[1].trim();
-  const direction = match[2] as Direction;
-  const display = match[3].trim();
+  const display = match[2].trim();
   const headMatch = head.match(/^([A-Za-z][A-Za-z0-9_]*)(?:\s+(\{.*\}))?$/);
   if (!headMatch) {
     return null;
@@ -236,7 +233,7 @@ function parseSemanticLabel(label: string): {
 
   return {
     type: headMatch[1],
-    direction,
+    direction: "->",
     display,
     properties: parsePropertyMap(headMatch[2])
   };

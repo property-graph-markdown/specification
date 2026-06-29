@@ -43,5 +43,4 @@ The plugin recognizes links such as:
 
 ```markdown
 [APPROVED_BY {date: 2026-06-26} -> Peter Meier](peter-meier.md)
-[APPROVED_BY <- Invoice 2026-001](invoice.md)
 ```

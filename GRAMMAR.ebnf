@@ -10,8 +10,7 @@ Identifier ::=
     Letter (Letter | Digit | "_")* ;
 
 Direction ::=
-      "->"
-    | "<-" ;
+    "->" ;
 
 PropertyMap ::=
     YAMLFlowMapping ;

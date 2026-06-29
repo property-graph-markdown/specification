@@ -28,7 +28,7 @@ from markdown_it import MarkdownIt  # type: ignore
 
 IDENTIFIER_RE = re.compile(r"^[A-Za-z][A-Za-z0-9_]*$")
 DATE_RE = re.compile(r"^\d{4}-\d{2}-\d{2}$")
-SEMANTIC_RE = re.compile(r"^(?P<head>.*?)\s*(?P<direction>->|<-)\s*(?P<display>.+?)\s*$")
+SEMANTIC_RE = re.compile(r"^(?P<head>.*?)\s*->\s*(?P<display>.+?)\s*$")
 TYPE_AND_PROPS_RE = re.compile(r"^(?P<type>[A-Za-z][A-Za-z0-9_]*)\s*(?P<props>\{.*\})?\s*$")
 
 
@@ -85,10 +85,14 @@ def parse_corpus(path: str | Path) -> Graph:
         node.properties = properties
 
         for link in extract_links(body):
-            if "->" not in link.label and "<-" not in link.label:
+            if "->" not in link.label:
+                if "<-" in link.label:
+                    graph.warnings.append(
+                        f"{node_id}: incoming relationship syntax is not supported in PGM 0.1: {link.label!r}"
+                    )
                 continue
             try:
-                rel_type, rel_props, direction, display = parse_relationship_label(link.label)
+                rel_type, rel_props, display = parse_relationship_label(link.label)
             except ValueError as exc:
                 graph.warnings.append(f"{node_id}: {exc}: {link.label!r}")
                 continue
@@ -96,15 +100,10 @@ def parse_corpus(path: str | Path) -> Graph:
             target_id = resolve_destination(link.destination, source_id=node_id)
             graph.ensure_node(target_id)
 
-            if direction == "->":
-                source, target = node_id, target_id
-            else:
-                source, target = target_id, node_id
-
             graph.relationships.append(
                 Relationship(
-                    source=source,
-                    target=target,
+                    source=node_id,
+                    target=target_id,
                     type=rel_type,
                     properties=rel_props,
                     display_label=display,
@@ -138,13 +137,12 @@ def parse_node_metadata(frontmatter: str) -> Tuple[List[str], Dict[str, Any]]:
     return labels, data
 
 
-def parse_relationship_label(label: str) -> Tuple[str, Dict[str, Any], str, str]:
+def parse_relationship_label(label: str) -> Tuple[str, Dict[str, Any], str]:
     match = SEMANTIC_RE.match(label.strip())
     if not match:
         raise ValueError("malformed semantic relationship")
 
     head = match.group("head").strip()
-    direction = match.group("direction")
     display = match.group("display").strip()
 
     head_match = TYPE_AND_PROPS_RE.match(head)
@@ -154,7 +152,7 @@ def parse_relationship_label(label: str) -> Tuple[str, Dict[str, Any], str, str]
     rel_type = head_match.group("type")
     props_src = head_match.group("props")
     properties = parse_yaml_flow_mapping(props_src) if props_src else {}
-    return rel_type, properties, direction, display
+    return rel_type, properties, display
 
 
 def extract_links(markdown: str) -> List[Link]:
