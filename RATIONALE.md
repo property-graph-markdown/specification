@@ -62,6 +62,18 @@ YAML flow mappings already provide this:
 
 PGM delegates property-map syntax to YAML rather than defining a new mini-language.
 
+## Why Are Semantic Wikilinks Optional?
+
+Wikilinks are useful in tools such as Obsidian, Logseq, and Foam, but they are not CommonMark links.
+
+PGM therefore keeps CommonMark hyperlinks as the core syntax and treats semantic wikilinks as an optional processor extension.
+
+```markdown
+[[peter-meier | :approvedBy {date: 2026-06-26}]]
+```
+
+This gives Obsidian users a natural authoring form without making PGM depend on an editor-specific link model.
+
 ## Why Property Graphs?
 
 Property Graphs model typed, directed relationships with properties on both nodes and relationships. This matches many real knowledge tasks:

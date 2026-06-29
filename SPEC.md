@@ -140,11 +140,35 @@ A conforming processor SHOULD report relationship labels that use `->` or `<-` a
 
 A conforming processor SHOULD report malformed semantic relationships without rejecting the entire document.
 
+## Optional Extensions
+
+Processors MAY implement optional extensions for environments that define additional Markdown-like link syntax.
+
+Extensions SHALL NOT change the meaning of conforming PGM core documents.
+
+### Semantic Wikilinks
+
+A processor MAY support semantic wikilinks for environments such as Obsidian.
+
+A semantic wikilink has the form:
+
+```markdown
+[[Target | :relationshipType {property: value}]]
+```
+
+The target part SHALL identify the related node. The relationship descriptor part SHALL follow the PGM relationship descriptor grammar.
+
+A semantic wikilink SHALL define an outgoing relationship from the current document node to the target node.
+
+The target resolution rules for wikilinks are implementation-defined. A processor SHOULD canonicalize semantic wikilink targets to the same node identifier form used for CommonMark hyperlink destinations.
+
+Semantic wikilinks are not part of the PGM core syntax because wikilinks are not defined by CommonMark. A conforming core processor MAY ignore semantic wikilinks.
+
 ## Compatibility
 
 PGM documents SHALL be valid CommonMark documents.
 
-PGM does not define new block syntax, inline syntax, HTML extensions, fenced directives, or renderer behavior.
+PGM core does not define new block syntax, inline syntax, HTML extensions, fenced directives, or renderer behavior.
 
 A Markdown renderer that does not understand PGM SHALL still render PGM documents as ordinary Markdown.
 

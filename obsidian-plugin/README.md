@@ -9,6 +9,7 @@ It provides:
 - vault scanning
 - semantic relationship extraction
 - preview rendering that shows `[label](target)` as `label: target`
+- experimental semantic wikilinks
 - a simple local graph viewer with relationship labels
 
 The plugin is intentionally small. It is an editor companion for the standard, not the standard itself.
@@ -44,4 +45,10 @@ The plugin recognizes links such as:
 
 ```markdown
 [:approvedBy {date: 2026-06-26}](peter-meier.md)
+```
+
+It also prototypes the optional semantic wikilink extension:
+
+```markdown
+[[peter-meier | :approvedBy {date: 2026-06-26}]]
 ```

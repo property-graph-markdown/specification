@@ -36,8 +36,19 @@ const DEFAULT_RELATIONSHIP_TYPES = [
   "relatesTo"
 ];
 
+const RELATIONSHIP_TYPE_SOURCE = "[A-Za-z][A-Za-z0-9_]*";
+const PROPERTY_MAP_SOURCE = "(?:\\s*\\{[^\\]\\n]*\\})?";
+const COMMONMARK_SEMANTIC_LINK_SOURCE =
+  `\\[:${RELATIONSHIP_TYPE_SOURCE}${PROPERTY_MAP_SOURCE}\\]\\([^)]+\\)`;
+const WIKILINK_SEMANTIC_LINK_SOURCE =
+  `\\[\\[[^\\]\\n|]+\\s*\\|\\s*:${RELATIONSHIP_TYPE_SOURCE}${PROPERTY_MAP_SOURCE}\\s*\\]\\]`;
+const SUGGEST_TRIGGER_RE = /(?:\[:|\[\[[^\]\n|]+\s*\|\s*:)([A-Za-z_][A-Za-z0-9_]*)?$/;
+
 const semanticLinkMatcher = new MatchDecorator({
-  regexp: /\[:[A-Za-z][A-Za-z0-9_]*(?:\s*\{[^\]\n]*\})?\]\([^)]+\)/g,
+  regexp: new RegExp(
+    `(?:${COMMONMARK_SEMANTIC_LINK_SOURCE}|${WIKILINK_SEMANTIC_LINK_SOURCE})`,
+    "g"
+  ),
   decoration: Decoration.mark({ class: "pgm-semantic-link" })
 });
 
@@ -123,7 +134,7 @@ class PgmRelationshipSuggest extends EditorSuggest<string> {
 
   onTrigger(cursor: EditorPosition, editor: Editor, _file: TFile | null): EditorSuggestTriggerInfo | null {
     const prefix = editor.getLine(cursor.line).slice(0, cursor.ch);
-    const match = prefix.match(/\[:([A-Za-z_][A-Za-z0-9_]*)?$/);
+    const match = prefix.match(SUGGEST_TRIGGER_RE);
     if (!match) {
       return null;
     }
@@ -187,6 +198,16 @@ class PgmGraphModal extends Modal {
 
 function extractRelationships(sourcePath: string, text: string): PgmRelationship[] {
   const relationships: PgmRelationship[] = [];
+  extractCommonMarkRelationships(sourcePath, text, relationships);
+  extractSemanticWikilinkRelationships(sourcePath, text, relationships);
+  return relationships;
+}
+
+function extractCommonMarkRelationships(
+  sourcePath: string,
+  text: string,
+  relationships: PgmRelationship[]
+) {
   const linkRe = /\[([^\]\n]+)\]\(([^)]+)\)/g;
   let match: RegExpExecArray | null;
 
@@ -199,17 +220,48 @@ function extractRelationships(sourcePath: string, text: string): PgmRelationship
     }
 
     const targetPath = normalizeDestination(sourcePath, destination);
-
-    relationships.push({
-      source: sourcePath,
-      target: targetPath,
-      type: parsed.type,
-      display: parsed.display,
-      properties: parsed.properties
-    });
+    addRelationship(relationships, sourcePath, targetPath, parsed);
   }
+}
 
-  return relationships;
+function extractSemanticWikilinkRelationships(
+  sourcePath: string,
+  text: string,
+  relationships: PgmRelationship[]
+) {
+  const wikilinkRe = /\[\[([^\]\n|]+?)\s*\|\s*([^\]\n]+?)\s*\]\]/g;
+  let match: RegExpExecArray | null;
+
+  while ((match = wikilinkRe.exec(text)) !== null) {
+    const target = match[1].trim();
+    const label = match[2].trim();
+    const parsed = parseSemanticLabel(label);
+    if (!parsed) {
+      continue;
+    }
+
+    const targetPath = normalizeWikilinkDestination(target);
+    addRelationship(relationships, sourcePath, targetPath, parsed);
+  }
+}
+
+function addRelationship(
+  relationships: PgmRelationship[],
+  sourcePath: string,
+  targetPath: string,
+  parsed: {
+    type: string;
+    display: string;
+    properties: Record<string, string>;
+  }
+) {
+  relationships.push({
+    source: sourcePath,
+    target: targetPath,
+    type: parsed.type,
+    display: parsed.display,
+    properties: parsed.properties
+  });
 }
 
 function parseSemanticLabel(label: string): {
@@ -301,6 +353,19 @@ function normalizeDestination(sourcePath: string, destination: string): string {
   const slash = sourcePath.lastIndexOf("/");
   const prefix = slash === -1 ? "" : sourcePath.slice(0, slash + 1);
   return normalizePath(prefix + decoded);
+}
+
+function normalizeWikilinkDestination(destination: string): string {
+  const withoutBlock = destination.split("^")[0];
+  const withoutFragment = withoutBlock.split("#")[0];
+  const decoded = safeDecode(withoutFragment.trim());
+
+  if (/^[a-z][a-z0-9+.-]*:/i.test(decoded)) {
+    return decoded;
+  }
+
+  const withExtension = decoded.toLowerCase().endsWith(".md") ? decoded : `${decoded}.md`;
+  return normalizePath(withExtension);
 }
 
 function safeDecode(value: string): string {

@@ -24,6 +24,8 @@ That is the whole core language.
 
 PGM 0.1.2 intentionally defines only outgoing relationships. A relationship is authored once, in the Markdown file representing its source node. This prevents conflicting definitions of the same edge across two files.
 
+Processors may also support optional editor-specific extensions. For example, the Obsidian plugin prototypes semantic wikilinks such as `[[Peter Meier | :approvedBy {date: 2026-06-26}]]`.
+
 ```markdown
 ---
 labels: [Invoice, Document]
