@@ -1,6 +1,6 @@
 # Rationale
 
-PGM is intentionally small. This document explains the design decisions behind the 0.1 draft.
+PGM is intentionally small. This document explains the design decisions behind the 0.1.1 draft.
 
 ## Why CommonMark?
 
@@ -22,11 +22,11 @@ The link remains useful to humans even when no graph processor is present.
 
 ## Why No Direction Marker?
 
-Property Graph relationships are directed, but PGM 0.1 only allows outgoing relationships.
+Property Graph relationships are directed, but PGM 0.1.1 only allows outgoing relationships.
 
 Once incoming relationships are excluded, a direction marker no longer carries information. The Markdown file is the source node. The link destination is the target node.
 
-PGM 0.1 therefore does not define `->` or `<-`.
+PGM 0.1.1 therefore does not define `->` or `<-`.
 
 Allowing both incoming and outgoing relationship syntax would make two Markdown files potential authorities for the same graph edge. For example, `invoice.md` could define an outgoing `APPROVED_BY` relationship to `peter.md`, while `peter.md` could define an incoming `APPROVED_BY` relationship from `invoice.md` with different properties. That would require conflict-resolution rules, merge semantics, or precedence rules.
 
@@ -36,7 +36,7 @@ PGM avoids that complexity. A relationship is authored once, in the source node 
 
 PGM must distinguish semantic relationships from ordinary prose links.
 
-The 0.1 grammar treats uppercase identifiers such as `APPROVED_BY`, `PART_OF`, and `DEPENDS_ON` as relationship types. Links such as `[Read more](invoice.md)` remain ordinary Markdown links.
+The 0.1.1 grammar treats uppercase identifiers such as `APPROVED_BY`, `PART_OF`, and `DEPENDS_ON` as relationship types. Links such as `[Read more](invoice.md)` remain ordinary Markdown links.
 
 This follows common Property Graph and openCypher style while keeping the grammar small.
 
@@ -84,7 +84,7 @@ RDF is powerful and important, but it is not the smallest fit for this proposal.
 
 PGM is designed around the Property Graph model: nodes with labels and properties, and directed relationships with types and properties. That model maps naturally to openCypher and to how many users already think about graph databases.
 
-RDF export may be useful later, but RDF is intentionally not the core information model for PGM 0.1.
+RDF export may be useful later, but RDF is intentionally not the core information model for PGM 0.1.1.
 
 ## Why Not HTML Extensions?
 
@@ -116,8 +116,8 @@ The visible label of a PGM semantic link defines the relationship descriptor.
 
 The destination is the stable machine-readable reference to the target node. PGM therefore treats the destination as canonical.
 
-## Why Keep 0.1 So Small?
+## Why Keep 0.1.1 So Small?
 
 PGM should feel like CommonMark, YAML, or OpenAPI: a specification first, not an application framework.
 
-Features such as namespaces, ontology validation, RDF export, embedded graph queries, and inference rules are useful ideas. They are excluded from 0.1 because the core must remain obvious, interoperable, and easy to implement.
+Features such as namespaces, ontology validation, RDF export, embedded graph queries, and inference rules are useful ideas. They are excluded from 0.1.1 because the core must remain obvious, interoperable, and easy to implement.

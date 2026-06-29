@@ -1,6 +1,6 @@
 # Property Graph Markdown for Obsidian
 
-This is a minimal Obsidian plugin for Property Graph Markdown 0.1.
+This is a minimal Obsidian plugin for Property Graph Markdown 0.1.1.
 
 It provides:
 

@@ -22,7 +22,7 @@ PGM interprets an ordinary Markdown corpus as a Property Graph:
 
 That is the whole core language.
 
-PGM 0.1 intentionally defines only outgoing relationships. A relationship is authored once, in the Markdown file representing its source node. This prevents conflicting definitions of the same edge across two files.
+PGM 0.1.1 intentionally defines only outgoing relationships. A relationship is authored once, in the Markdown file representing its source node. This prevents conflicting definitions of the same edge across two files.
 
 ```markdown
 ---
@@ -104,7 +104,7 @@ print(graph_to_cypher(graph))
 ## Project Layout
 
 ```text
-SPEC.md              Normative 0.1 draft specification
+SPEC.md              Normative 0.1.1 draft specification
 RATIONALE.md         Design rationale
 GRAMMAR.ebnf         Minimal relationship-label grammar
 examples/            Small coherent Invoice-Person-Project graph
@@ -115,13 +115,13 @@ obsidian-plugin/     Minimal Obsidian editor integration
 
 ## Roadmap
 
-PGM 0.1 focuses only on the smallest useful core:
+PGM 0.1.1 focuses only on the smallest useful core:
 
 - Core specification
 - Reference parser
 - Obsidian plugin
 
-Future ideas such as namespaces, ontology validation, RDF export, embedded graph queries, and inference rules are intentionally excluded from 0.1. They can be explored only after the core remains simple, interoperable, and obvious.
+Future ideas such as namespaces, ontology validation, RDF export, embedded graph queries, and inference rules are intentionally excluded from 0.1.1. They can be explored only after the core remains simple, interoperable, and obvious.
 
 ## Guiding Principle
 
