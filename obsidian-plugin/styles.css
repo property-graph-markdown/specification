@@ -10,6 +10,15 @@
   letter-spacing: 0;
 }
 
+.pgm-link-label {
+  color: var(--text-normal);
+}
+
+.pgm-link-destination {
+  font-family: var(--font-monospace);
+  font-size: 0.95em;
+}
+
 .pgm-modal {
   min-width: min(860px, 92vw);
 }

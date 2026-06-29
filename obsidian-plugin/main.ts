@@ -70,6 +70,9 @@ export default class PgmPlugin extends Plugin {
   async onload() {
     this.registerEditorExtension(pgmHighlightExtension);
     this.registerEditorSuggest(new PgmRelationshipSuggest(this));
+    this.registerMarkdownPostProcessor((element) => {
+      renderLinksAsLabelAndDestination(element);
+    });
 
     this.addRibbonIcon("git-fork", "Open PGM graph", () => {
       new PgmGraphModal(this.app, this).open();
@@ -260,6 +263,43 @@ function parsePropertyMap(source: string | undefined): Record<string, string> {
     properties[key] = value;
   }
   return properties;
+}
+
+function renderLinksAsLabelAndDestination(root: HTMLElement) {
+  const links = Array.from(root.querySelectorAll("a[href]")) as HTMLAnchorElement[];
+
+  for (const link of links) {
+    if (link.dataset.pgmRenderedDestination === "true") {
+      continue;
+    }
+    if (link.querySelector("img, svg")) {
+      continue;
+    }
+
+    const label = link.textContent?.trim() ?? "";
+    const destination = readableDestination(link);
+    if (!label || !destination || label === destination) {
+      continue;
+    }
+
+    const labelEl = document.createElement("span");
+    labelEl.classList.add("pgm-link-label");
+    labelEl.textContent = `${label}: `;
+
+    link.parentElement?.insertBefore(labelEl, link);
+    link.textContent = destination;
+    link.dataset.pgmRenderedDestination = "true";
+    link.classList.add("pgm-link-destination");
+  }
+}
+
+function readableDestination(link: HTMLAnchorElement): string {
+  const raw = link.getAttribute("data-href") ?? link.getAttribute("href") ?? "";
+  const destination = raw.trim();
+  if (!destination) {
+    return "";
+  }
+  return safeDecode(destination);
 }
 
 function normalizeDestination(sourcePath: string, destination: string): string {

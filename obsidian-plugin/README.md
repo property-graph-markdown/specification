@@ -8,6 +8,7 @@ It provides:
 - autocomplete for relationship types
 - vault scanning
 - semantic relationship extraction
+- preview rendering that shows `[label](target)` as `label: target`
 - a simple local graph viewer with relationship labels
 
 The plugin is intentionally small. It is an editor companion for the standard, not the standard itself.
