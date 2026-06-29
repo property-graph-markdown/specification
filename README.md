@@ -16,9 +16,9 @@ PGM interprets an ordinary Markdown corpus as a Property Graph:
 
 1. One Markdown file is one graph node.
 2. YAML frontmatter defines node labels and node properties.
-3. Ordinary CommonMark links define outgoing relationships when their visible label contains `->`.
-4. YAML flow mappings inside semantic link labels define relationship properties.
-5. The link destination is canonical. The display label is for humans.
+3. Ordinary CommonMark links define outgoing relationships when their visible label is a relationship descriptor.
+4. A relationship descriptor is an uppercase relationship type plus an optional YAML flow mapping.
+5. The link destination is canonical and identifies the target node.
 
 That is the whole core language.
 
@@ -33,8 +33,8 @@ currency: CHF
 ---
 # Invoice 2026-001
 
-[APPROVED_BY {date: 2026-06-26} -> Peter Meier](Peter%20Meier.md)
-[PART_OF -> Project Apollo](Project%20Apollo.md)
+[APPROVED_BY {date: 2026-06-26}](Peter%20Meier.md)
+[PART_OF](Project%20Apollo.md)
 ```
 
 The document remains Markdown. Existing editors, renderers, search tools, diff tools, and static site generators continue to work.

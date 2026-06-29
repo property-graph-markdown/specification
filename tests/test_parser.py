@@ -23,7 +23,7 @@ class ParserTests(unittest.TestCase):
     def test_outgoing_relationship(self):
         graph = self.parse_files(
             {
-                "alice.md": "---\nlabels: [Person]\n---\n[KNOWS -> Bob](bob.md)\n",
+                "alice.md": "---\nlabels: [Person]\n---\n[KNOWS](bob.md)\n",
                 "bob.md": "---\nlabels: [Person]\n---\n# Bob\n",
             }
         )
@@ -34,24 +34,24 @@ class ParserTests(unittest.TestCase):
         self.assertEqual(rel.target, "bob.md")
         self.assertEqual(rel.type, "KNOWS")
 
-    def test_incoming_relationship_syntax_warns_and_skips(self):
+    def test_direction_marker_warns_and_skips(self):
         graph = self.parse_files(
             {
                 "invoice.md": "---\nlabels: [Invoice]\n---\n# Invoice\n",
-                "peter.md": "---\nlabels: [Person]\n---\n[APPROVED_BY <- Invoice](invoice.md)\n",
+                "peter.md": "---\nlabels: [Person]\n---\n[APPROVED_BY -> Invoice](invoice.md)\n",
             }
         )
 
         self.assertEqual(graph.relationships, [])
         self.assertEqual(len(graph.warnings), 1)
-        self.assertIn("incoming relationship syntax is not supported", graph.warnings[0])
+        self.assertIn("direction markers are not supported", graph.warnings[0])
 
     def test_relationship_properties(self):
         graph = self.parse_files(
             {
                 "invoice.md": (
                     "---\nlabels: [Invoice]\n---\n"
-                    "[APPROVED_BY {date: 2026-06-26, confidence: 0.98} -> Peter](peter.md)\n"
+                    "[APPROVED_BY {date: 2026-06-26, confidence: 0.98}](peter.md)\n"
                 ),
                 "peter.md": "---\nlabels: [Person]\n---\n# Peter\n",
             }
@@ -78,14 +78,14 @@ class ParserTests(unittest.TestCase):
     def test_malformed_semantic_relationship_warns_and_skips(self):
         graph = self.parse_files(
             {
-                "a.md": "---\nlabels: [Thing]\n---\n[-> Missing type](b.md)\n",
+                "a.md": "---\nlabels: [Thing]\n---\n[APPROVED_BY {date](b.md)\n",
                 "b.md": "# B\n",
             }
         )
 
         self.assertEqual(graph.relationships, [])
         self.assertEqual(len(graph.warnings), 1)
-        self.assertIn("relationship type", graph.warnings[0])
+        self.assertIn("malformed relationship descriptor", graph.warnings[0])
 
 
 if __name__ == "__main__":

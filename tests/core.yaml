@@ -1,21 +1,21 @@
 cases:
   - name: outgoing relationship
     markdown: |
-      [KNOWS -> Bob](bob.md)
+      [KNOWS](bob.md)
     relationships:
       - source: alice.md
         type: KNOWS
         target: bob.md
 
-  - name: incoming relationship syntax
+  - name: direction marker syntax
     markdown: |
-      [APPROVED_BY <- Invoice](invoice.md)
+      [APPROVED_BY -> Invoice](invoice.md)
     relationships: []
     warnings: true
 
   - name: relationship properties
     markdown: |
-      [APPROVED_BY {date: 2026-06-26, confidence: 0.98} -> Peter](peter.md)
+      [APPROVED_BY {date: 2026-06-26, confidence: 0.98}](peter.md)
     properties:
       date: 2026-06-26
       confidence: 0.98
@@ -27,5 +27,5 @@ cases:
 
   - name: malformed semantic relationship
     markdown: |
-      [-> Missing type](target.md)
+      [APPROVED_BY {date](target.md)
     warnings: true

@@ -28,8 +28,7 @@ from markdown_it import MarkdownIt  # type: ignore
 
 IDENTIFIER_RE = re.compile(r"^[A-Za-z][A-Za-z0-9_]*$")
 DATE_RE = re.compile(r"^\d{4}-\d{2}-\d{2}$")
-SEMANTIC_RE = re.compile(r"^(?P<head>.*?)\s*->\s*(?P<display>.+?)\s*$")
-TYPE_AND_PROPS_RE = re.compile(r"^(?P<type>[A-Za-z][A-Za-z0-9_]*)\s*(?P<props>\{.*\})?\s*$")
+SEMANTIC_RE = re.compile(r"^(?P<type>[A-Z][A-Z0-9_]*)\s*(?P<props>\{.*\})?\s*$")
 
 
 @dataclass
@@ -85,16 +84,11 @@ def parse_corpus(path: str | Path) -> Graph:
         node.properties = properties
 
         for link in extract_links(body):
-            if "->" not in link.label:
-                if "<-" in link.label:
-                    graph.warnings.append(
-                        f"{node_id}: incoming relationship syntax is not supported in PGM 0.1: {link.label!r}"
-                    )
-                continue
             try:
-                rel_type, rel_props, display = parse_relationship_label(link.label)
+                rel_type, rel_props = parse_relationship_label(link.label)
             except ValueError as exc:
-                graph.warnings.append(f"{node_id}: {exc}: {link.label!r}")
+                if _looks_like_relationship_attempt(link.label):
+                    graph.warnings.append(f"{node_id}: {exc}: {link.label!r}")
                 continue
 
             target_id = resolve_destination(link.destination, source_id=node_id)
@@ -106,7 +100,7 @@ def parse_corpus(path: str | Path) -> Graph:
                     target=target_id,
                     type=rel_type,
                     properties=rel_props,
-                    display_label=display,
+                    display_label="",
                 )
             )
 
@@ -137,28 +131,33 @@ def parse_node_metadata(frontmatter: str) -> Tuple[List[str], Dict[str, Any]]:
     return labels, data
 
 
-def parse_relationship_label(label: str) -> Tuple[str, Dict[str, Any], str]:
+def parse_relationship_label(label: str) -> Tuple[str, Dict[str, Any]]:
+    if "->" in label or "<-" in label:
+        raise ValueError("direction markers are not supported in PGM 0.1")
+
     match = SEMANTIC_RE.match(label.strip())
     if not match:
-        raise ValueError("malformed semantic relationship")
+        raise ValueError("malformed relationship descriptor")
 
-    head = match.group("head").strip()
-    display = match.group("display").strip()
-
-    head_match = TYPE_AND_PROPS_RE.match(head)
-    if not head_match:
-        raise ValueError("relationship type or property map is invalid")
-
-    rel_type = head_match.group("type")
-    props_src = head_match.group("props")
+    rel_type = match.group("type")
+    props_src = match.group("props")
     properties = parse_yaml_flow_mapping(props_src) if props_src else {}
-    return rel_type, properties, display
+    return rel_type, properties
 
 
 def extract_links(markdown: str) -> List[Link]:
     """Extract CommonMark links as (visible label, destination)."""
 
     return _extract_links_markdown_it(markdown)
+
+
+def _looks_like_relationship_attempt(label: str) -> bool:
+    stripped = label.strip()
+    return (
+        "->" in stripped
+        or "<-" in stripped
+        or bool(re.match(r"^[A-Z][A-Z0-9_]*\s*\{", stripped))
+    )
 
 
 def parse_yaml_mapping(source: str) -> Dict[str, Any]:

@@ -15,24 +15,30 @@ Markdown already has a native way to connect documents: links.
 Using ordinary hyperlinks means PGM works in existing Markdown tools without plugins, custom renderers, or preprocessing. A semantic relationship still looks like a readable sentence fragment in a note.
 
 ```markdown
-[PART_OF -> Project Apollo](project-apollo.md)
+[PART_OF](project-apollo.md)
 ```
 
 The link remains useful to humans even when no graph processor is present.
 
-## Why an Outgoing Arrow?
+## Why No Direction Marker?
 
-Property Graph relationships are directed. Arrows are already the common visual notation for direction.
+Property Graph relationships are directed, but PGM 0.1 only allows outgoing relationships.
 
-PGM uses `->` because it is ASCII, readable, easy to type, and already familiar from graph query languages and diagrams.
+Once incoming relationships are excluded, a direction marker no longer carries information. The Markdown file is the source node. The link destination is the target node.
 
-The direction marker is the smallest syntax needed to distinguish an ordinary Markdown link from a typed graph relationship.
-
-PGM 0.1 intentionally does not define `<-`.
+PGM 0.1 therefore does not define `->` or `<-`.
 
 Allowing both incoming and outgoing relationship syntax would make two Markdown files potential authorities for the same graph edge. For example, `invoice.md` could define an outgoing `APPROVED_BY` relationship to `peter.md`, while `peter.md` could define an incoming `APPROVED_BY` relationship from `invoice.md` with different properties. That would require conflict-resolution rules, merge semantics, or precedence rules.
 
-PGM avoids that complexity. A relationship is authored once, in the source node document, using `->`.
+PGM avoids that complexity. A relationship is authored once, in the source node document.
+
+## Why Uppercase Relationship Types?
+
+PGM must distinguish semantic relationships from ordinary prose links.
+
+The 0.1 grammar treats uppercase identifiers such as `APPROVED_BY`, `PART_OF`, and `DEPENDS_ON` as relationship types. Links such as `[Read more](invoice.md)` remain ordinary Markdown links.
+
+This follows common Property Graph and openCypher style while keeping the grammar small.
 
 ## Why YAML?
 
@@ -49,7 +55,7 @@ Relationship properties need a compact but readable syntax inside a link label.
 YAML flow mappings already provide this:
 
 ```markdown
-[APPROVED_BY {date: 2026-06-26} -> Peter Meier](peter-meier.md)
+[APPROVED_BY {date: 2026-06-26}](peter-meier.md)
 ```
 
 PGM delegates property-map syntax to YAML rather than defining a new mini-language.
@@ -87,7 +93,7 @@ HTML extensions would remain valid Markdown, but they are harder to read, noisie
 PGM favors syntax that a human can understand while reading raw Markdown.
 
 ```markdown
-[DEPENDS_ON -> Service API](service-api.md)
+[DEPENDS_ON](service-api.md)
 ```
 
 This is clearer than an equivalent HTML attribute block for most authors.
@@ -106,9 +112,9 @@ Using one file as one node gives PGM an immediate canonical identity model witho
 
 ## Why Is the Link Destination Canonical?
 
-The visible label of a Markdown link is for humans and may change over time.
+The visible label of a PGM semantic link defines the relationship descriptor.
 
-The destination is the stable machine-readable reference. PGM therefore treats the destination as canonical and the display label as human-readable only.
+The destination is the stable machine-readable reference to the target node. PGM therefore treats the destination as canonical.
 
 ## Why Keep 0.1 So Small?
 

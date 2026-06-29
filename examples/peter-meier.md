@@ -7,4 +7,4 @@ role: Finance Manager
 
 Peter Meier approves finance documents for active projects.
 
-[MEMBER_OF -> Project Apollo](project-apollo.md)
+[MEMBER_OF](project-apollo.md)

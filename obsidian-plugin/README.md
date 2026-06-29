@@ -43,5 +43,5 @@ For local testing, copy `main.js`, `manifest.json`, and `styles.css` into an Obs
 The plugin recognizes links such as:
 
 ```markdown
-[APPROVED_BY {date: 2026-06-26} -> Peter Meier](peter-meier.md)
+[APPROVED_BY {date: 2026-06-26}](peter-meier.md)
 ```

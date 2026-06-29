@@ -20,13 +20,10 @@ import {
   ViewUpdate
 } from "@codemirror/view";
 
-type Direction = "->";
-
 interface PgmRelationship {
   source: string;
   target: string;
   type: string;
-  direction: Direction;
   display: string;
   properties: Record<string, string>;
 }
@@ -40,7 +37,7 @@ const DEFAULT_RELATIONSHIP_TYPES = [
 ];
 
 const semanticLinkMatcher = new MatchDecorator({
-  regexp: /\[[^\]\n]*->[^\]\n]*\]\([^)]+\)/g,
+  regexp: /\[[A-Z][A-Z0-9_]*(?:\s*\{[^\]\n]*\})?\]\([^)]+\)/g,
   decoration: Decoration.mark({ class: "pgm-semantic-link" })
 });
 
@@ -155,7 +152,7 @@ class PgmRelationshipSuggest extends EditorSuggest<string> {
     if (!this.context) {
       return;
     }
-    this.context.editor.replaceRange(`${value} -> `, this.context.start, this.context.end);
+    this.context.editor.replaceRange(value, this.context.start, this.context.end);
   }
 }
 
@@ -190,7 +187,7 @@ class PgmGraphModal extends Modal {
 
 function extractRelationships(sourcePath: string, text: string): PgmRelationship[] {
   const relationships: PgmRelationship[] = [];
-  const linkRe = /\[([^\]\n]*->[^\]\n]*)\]\(([^)]+)\)/g;
+  const linkRe = /\[([^\]\n]+)\]\(([^)]+)\)/g;
   let match: RegExpExecArray | null;
 
   while ((match = linkRe.exec(text)) !== null) {
@@ -207,7 +204,6 @@ function extractRelationships(sourcePath: string, text: string): PgmRelationship
       source: sourcePath,
       target: targetPath,
       type: parsed.type,
-      direction: parsed.direction,
       display: parsed.display,
       properties: parsed.properties
     });
@@ -218,27 +214,18 @@ function extractRelationships(sourcePath: string, text: string): PgmRelationship
 
 function parseSemanticLabel(label: string): {
   type: string;
-  direction: Direction;
   display: string;
   properties: Record<string, string>;
 } | null {
-  const match = label.trim().match(/^(.*?)\s*->\s*(.+)$/);
+  const match = label.trim().match(/^([A-Z][A-Z0-9_]*)(?:\s*(\{.*\}))?$/);
   if (!match) {
     return null;
   }
 
-  const head = match[1].trim();
-  const display = match[2].trim();
-  const headMatch = head.match(/^([A-Za-z][A-Za-z0-9_]*)(?:\s+(\{.*\}))?$/);
-  if (!headMatch) {
-    return null;
-  }
-
   return {
-    type: headMatch[1],
-    direction: "->",
-    display,
-    properties: parsePropertyMap(headMatch[2])
+    type: match[1],
+    display: "",
+    properties: parsePropertyMap(match[2])
   };
 }
 

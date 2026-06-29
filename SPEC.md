@@ -69,25 +69,25 @@ This represents one node with labels `Invoice` and `Document` and properties `st
 
 ## Relationship Representation
 
-A CommonMark hyperlink whose visible label contains `->` SHALL be interpreted as a semantic relationship.
+A CommonMark hyperlink whose visible label is a relationship descriptor SHALL be interpreted as a semantic relationship.
 
-The hyperlink destination SHALL define the related node identifier. The visible display label after the direction marker is human-readable only and SHALL NOT define the canonical target.
+The hyperlink destination SHALL define the related node identifier.
 
-The relationship type SHALL appear before the direction marker.
+The visible link label SHALL define the relationship descriptor. The relationship descriptor SHALL contain the relationship type and MAY contain relationship properties.
 
 PGM 0.1 only defines outgoing relationships. The relationship SHALL be authored in the Markdown file that represents the source node.
 
 Example:
 
 ```markdown
-[APPROVED_BY -> Peter Meier](Peter%20Meier.md)
+[APPROVED_BY](Peter%20Meier.md)
 ```
 
 This defines an outgoing relationship of type `APPROVED_BY` from the current document node to `Peter Meier.md`.
 
-PGM 0.1 does not define incoming relationship syntax. A label containing `<-` SHALL NOT create a PGM relationship.
+PGM 0.1 does not define direction-marker syntax. A label containing `->` or `<-` SHALL NOT create a PGM relationship.
 
-This restriction avoids duplicate or conflicting definitions of the same relationship across two Markdown files.
+This restriction avoids redundant syntax and duplicate or conflicting definitions of the same relationship across two Markdown files.
 
 ## Relationship Grammar
 
@@ -95,17 +95,16 @@ The semantic hyperlink label grammar is:
 
 ```ebnf
 SemanticRelationshipLabel ::=
-    RelationshipType PropertyMap? Direction DisplayLabel
+    RelationshipDescriptor
 
-RelationshipType ::= Identifier
+RelationshipDescriptor ::=
+    RelationshipType PropertyMap?
 
-Identifier ::= Letter (Letter | Digit | "_")*
+RelationshipType ::= UppercaseIdentifier
 
-Direction ::= "->"
+UppercaseIdentifier ::= UppercaseLetter (UppercaseLetter | Digit | "_")*
 
 PropertyMap ::= YAMLFlowMapping
-
-DisplayLabel ::= Character+
 ```
 
 `PropertyMap` SHALL be a YAML 1.2 flow mapping.
@@ -113,10 +112,10 @@ DisplayLabel ::= Character+
 Example:
 
 ```markdown
-[APPROVED_BY {date: 2026-06-26} -> Peter Meier](Peter%20Meier.md)
+[APPROVED_BY {date: 2026-06-26}](Peter%20Meier.md)
 ```
 
-The relationship type is `APPROVED_BY`. The relationship direction is outgoing. The relationship property map contains `date: 2026-06-26`.
+The relationship type is `APPROVED_BY`. The relationship property map contains `date: 2026-06-26`. The relationship target is `Peter Meier.md`.
 
 ## Processing Model
 
@@ -128,14 +127,14 @@ A conforming processor SHALL:
 4. Assign node labels from the reserved `labels` property.
 5. Assign all other frontmatter entries as node properties.
 6. Parse CommonMark hyperlinks.
-7. Treat only hyperlinks whose visible label contains `->` as semantic relationships.
+7. Treat only hyperlinks whose visible label is a relationship descriptor as semantic relationships.
 8. Parse semantic relationship labels according to the grammar.
 9. Resolve hyperlink destinations to canonical node identifiers.
 10. Emit, store, or expose an openCypher-compatible Property Graph.
 
 A conforming processor SHOULD ignore ordinary hyperlinks.
 
-A conforming processor SHOULD report apparent incoming relationship labels that use `<-` as non-conforming without creating a relationship.
+A conforming processor SHOULD report relationship labels that use `->` or `<-` as non-conforming without creating a relationship.
 
 A conforming processor SHOULD report malformed semantic relationships without rejecting the entire document.
 
