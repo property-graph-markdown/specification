@@ -81,7 +81,7 @@ The hyperlink destination SHALL define the target reference.
 
 The visible link label SHALL define either a node label declaration or a relationship descriptor.
 
-If the semantic link is a `NodeLabel`, it SHALL define a node label on the current document node and SHALL NOT create a Property Graph relationship.
+If the semantic link is a `NodeLabelMarker`, it SHALL define a node label on the current document node and SHALL NOT create a Property Graph relationship.
 
 If the semantic link is a `RelationshipDescriptor`, it SHALL define an outgoing relationship. PGM 0.2.1 only defines outgoing relationships. The relationship SHALL be authored in the Markdown file that represents the source node.
 
@@ -104,10 +104,10 @@ The semantic link grammar is:
 
 ```ebnf
 SemanticLink ::=
-    NodeLabel
+    NodeLabelMarker
   | RelationshipDescriptor
 
-NodeLabel ::= ":LABEL"
+NodeLabelMarker ::= ":LABEL"
 
 RelationshipDescriptor ::= ":" RelationshipType PropertyMap?
 
@@ -118,7 +118,7 @@ Identifier ::= Letter (Letter | Digit | "_")*
 PropertyMap ::= YAMLFlowMapping
 ```
 
-`LABEL` is a reserved keyword with node label semantics. It SHALL be interpreted as a `NodeLabel`, not as a relationship type.
+`LABEL` is a reserved keyword with node label semantics. It SHALL be interpreted as a `NodeLabelMarker`, not as a relationship type.
 
 A `LABEL` annotation SHALL NOT include a `PropertyMap`.
 
@@ -144,7 +144,7 @@ A conforming processor SHALL:
 4. Assign all frontmatter entries as node properties.
 5. Parse CommonMark hyperlinks.
 6. Treat only hyperlinks whose visible label matches the semantic link grammar as PGM semantic links.
-7. For `NodeLabel` semantic links, assign a node label to the current document node and do not create a relationship.
+7. For `NodeLabelMarker` semantic links, assign a node label to the current document node and do not create a relationship.
 8. For `RelationshipDescriptor` semantic links, create outgoing relationships using the relationship type.
 9. Resolve hyperlink destinations to canonical node identifiers.
 10. Emit, store, or expose an openCypher-compatible Property Graph.
@@ -173,7 +173,7 @@ A semantic wikilink has the form:
 
 The target part SHALL identify the target reference. The label part SHALL follow the PGM semantic link grammar without the surrounding CommonMark link brackets.
 
-If the semantic wikilink label is a `NodeLabel`, it SHALL define a node label on the current document node and SHALL NOT create a Property Graph relationship.
+If the semantic wikilink label is a `NodeLabelMarker`, it SHALL define a node label on the current document node and SHALL NOT create a Property Graph relationship.
 
 If the semantic wikilink label is a `RelationshipDescriptor`, it SHALL define an outgoing relationship from the current document node to the target node.
 

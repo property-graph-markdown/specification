@@ -1,10 +1,10 @@
 (* Property Graph Markdown 0.2.1 semantic-link grammar. *)
 
 SemanticLink ::=
-    NodeLabel
+    NodeLabelMarker
   | RelationshipDescriptor ;
 
-NodeLabel ::=
+NodeLabelMarker ::=
     ":LABEL" ;
 
 RelationshipDescriptor ::=
