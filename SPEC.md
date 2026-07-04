@@ -104,7 +104,12 @@ The semantic hyperlink label grammar is:
 
 ```ebnf
 SemanticLinkLabel ::=
-    ":" AnnotationType PropertyMap?
+    LabelDescriptor
+  | RelationshipDescriptor
+
+LabelDescriptor ::= ":LABEL"
+
+RelationshipDescriptor ::= ":" AnnotationType PropertyMap?
 
 AnnotationType ::= Identifier
 
@@ -113,7 +118,7 @@ Identifier ::= Letter (Letter | Digit | "_")*
 PropertyMap ::= YAMLFlowMapping
 ```
 
-`LABEL` is a reserved annotation type and SHALL be interpreted as a label declaration, not as a relationship type.
+`LABEL` is a reserved `AnnotationType` with node label semantics. It SHALL be interpreted as a `LabelDescriptor`, not as a relationship type.
 
 A `LABEL` annotation SHALL NOT include a `PropertyMap`.
 

@@ -1,6 +1,13 @@
 (* Property Graph Markdown 0.2.0 semantic-link-label grammar. *)
 
 SemanticLinkLabel ::=
+    LabelDescriptor
+  | RelationshipDescriptor ;
+
+LabelDescriptor ::=
+    ":LABEL" ;
+
+RelationshipDescriptor ::=
     ":" AnnotationType PropertyMap? ;
 
 AnnotationType ::=
@@ -13,6 +20,6 @@ PropertyMap ::=
     YAMLFlowMapping ;
 
 (* PropertyMap delegates to YAML 1.2 Flow Mapping. *)
-(* LABEL is a reserved AnnotationType with label semantics. *)
+(* LABEL is a reserved AnnotationType with Node label semantics. *)
 (* LABEL must not be followed by PropertyMap. *)
 (* This grammar intentionally defines no Markdown block syntax. *)
