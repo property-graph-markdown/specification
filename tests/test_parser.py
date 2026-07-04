@@ -23,8 +23,8 @@ class ParserTests(unittest.TestCase):
     def test_outgoing_relationship(self):
         graph = self.parse_files(
             {
-                "alice.md": "---\nlabels: [Person]\n---\n[:knows](bob.md)\n",
-                "bob.md": "---\nlabels: [Person]\n---\n# Bob\n",
+                "alice.md": "[:LABEL](Ontology/Person.md)\n[:knows](bob.md)\n",
+                "bob.md": "[:LABEL](Ontology/Person.md)\n# Bob\n",
             }
         )
 
@@ -33,12 +33,34 @@ class ParserTests(unittest.TestCase):
         self.assertEqual(rel.source, "alice.md")
         self.assertEqual(rel.target, "bob.md")
         self.assertEqual(rel.type, "knows")
+        self.assertEqual(graph.nodes["alice.md"].labels, ["Person"])
+
+    def test_label_annotation_does_not_create_relationship(self):
+        graph = self.parse_files(
+            {
+                "ada.md": "[:LABEL](Ontology/Person.md)\n[:LABEL](Ontology/Mathematician.md)\n",
+            }
+        )
+
+        self.assertEqual(graph.nodes["ada.md"].labels, ["Person", "Mathematician"])
+        self.assertEqual(graph.relationships, [])
+        self.assertNotIn("Ontology/Person.md", graph.nodes)
+
+    def test_yaml_labels_is_an_ordinary_property(self):
+        graph = self.parse_files(
+            {
+                "note.md": "---\nlabels: [NotGraphLabels]\n---\n# Note\n",
+            }
+        )
+
+        self.assertEqual(graph.nodes["note.md"].labels, [])
+        self.assertEqual(graph.nodes["note.md"].properties["labels"], ["NotGraphLabels"])
 
     def test_direction_marker_warns_and_skips(self):
         graph = self.parse_files(
             {
-                "invoice.md": "---\nlabels: [Invoice]\n---\n# Invoice\n",
-                "peter.md": "---\nlabels: [Person]\n---\n[:approvedBy -> Invoice](invoice.md)\n",
+                "invoice.md": "# Invoice\n",
+                "peter.md": "[:approvedBy -> Invoice](invoice.md)\n",
             }
         )
 
@@ -50,10 +72,10 @@ class ParserTests(unittest.TestCase):
         graph = self.parse_files(
             {
                 "invoice.md": (
-                    "---\nlabels: [Invoice]\n---\n"
+                    "[:LABEL](Ontology/Invoice.md)\n"
                     "[:approvedBy {date: 2026-06-26, confidence: 0.98}](peter.md)\n"
                 ),
-                "peter.md": "---\nlabels: [Person]\n---\n# Peter\n",
+                "peter.md": "[:LABEL](Ontology/Person.md)\n# Peter\n",
             }
         )
 
@@ -69,7 +91,7 @@ class ParserTests(unittest.TestCase):
     def test_ordinary_hyperlinks_are_ignored(self):
         graph = self.parse_files(
             {
-                "note.md": "---\nlabels: [Note]\n---\n[Read more](other.md)\n",
+                "note.md": "[:LABEL](Ontology/Note.md)\n[Read more](other.md)\n",
                 "other.md": "# Other\n",
             }
         )
@@ -79,14 +101,26 @@ class ParserTests(unittest.TestCase):
     def test_malformed_semantic_relationship_warns_and_skips(self):
         graph = self.parse_files(
             {
-                "a.md": "---\nlabels: [Thing]\n---\n[:approvedBy {date](b.md)\n",
+                "a.md": "[:LABEL](Ontology/Thing.md)\n[:approvedBy {date](b.md)\n",
                 "b.md": "# B\n",
             }
         )
 
         self.assertEqual(graph.relationships, [])
         self.assertEqual(len(graph.warnings), 1)
-        self.assertIn("malformed relationship descriptor", graph.warnings[0])
+        self.assertIn("malformed semantic link label", graph.warnings[0])
+
+    def test_label_annotation_rejects_properties(self):
+        graph = self.parse_files(
+            {
+                "a.md": "[:LABEL {source: manual}](Ontology/Thing.md)\n",
+            }
+        )
+
+        self.assertEqual(graph.nodes["a.md"].labels, [])
+        self.assertEqual(graph.relationships, [])
+        self.assertEqual(len(graph.warnings), 1)
+        self.assertIn("LABEL annotations must not contain relationship properties", graph.warnings[0])
 
 
 if __name__ == "__main__":

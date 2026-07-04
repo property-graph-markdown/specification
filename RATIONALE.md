@@ -1,6 +1,6 @@
 # Rationale
 
-PGM is intentionally small. This document explains the design decisions behind the 0.1.2 draft.
+PGM is intentionally small. This document explains the design decisions behind the 0.2.0 draft.
 
 ## Why CommonMark?
 
@@ -12,7 +12,7 @@ PGM uses CommonMark because the goal is not to invent a document language. The g
 
 Markdown already has a native way to connect documents: links.
 
-Using ordinary hyperlinks means PGM works in existing Markdown tools without plugins, custom renderers, or preprocessing. A semantic relationship still looks like a readable sentence fragment in a note.
+Using ordinary hyperlinks means PGM works in existing Markdown tools without plugins, custom renderers, or preprocessing. A semantic annotation still looks like a readable sentence fragment in a note.
 
 ```markdown
 [:partOf](project-apollo.md)
@@ -22,33 +22,46 @@ The link remains useful to humans even when no graph processor is present.
 
 ## Why No Direction Marker?
 
-Property Graph relationships are directed, but PGM 0.1.2 only allows outgoing relationships.
+Property Graph relationships are directed, but PGM 0.2.0 only allows outgoing relationships.
 
 Once incoming relationships are excluded, a direction marker no longer carries information. The Markdown file is the source node. The link destination is the target node.
 
-PGM 0.1.2 therefore does not define `->` or `<-`.
+PGM 0.2.0 therefore does not define `->` or `<-`.
 
 Allowing both incoming and outgoing relationship syntax would make two Markdown files potential authorities for the same graph edge. For example, `invoice.md` could define an outgoing `approvedBy` relationship to `peter.md`, while `peter.md` could define an incoming `approvedBy` relationship from `invoice.md` with different properties. That would require conflict-resolution rules, merge semantics, or precedence rules.
 
 PGM avoids that complexity. A relationship is authored once, in the source node document.
 
-## Why a Colon Relationship Marker?
+## Why a Colon Annotation Marker?
 
-PGM must distinguish semantic relationships from ordinary prose links.
+PGM must distinguish semantic annotations from ordinary prose links.
 
-The 0.1.2 grammar uses an openCypher-style relationship marker: `[:type]`.
+The 0.2.0 grammar uses an openCypher-style annotation marker: `[:type]`.
 
 The colon makes intent explicit without requiring uppercase naming conventions. Links such as `[Read more](invoice.md)` remain ordinary Markdown links, while `[:approvedBy](peter.md)` is visibly graph syntax.
+
+## Why Is LABEL Reserved?
+
+PGM 0.2.0 uses the same annotated-link syntax for labels and relationships.
+
+```markdown
+[:LABEL](Ontology/Person.md)
+[:bornIn {year: 1815}](London.md)
+```
+
+The reserved annotation `:LABEL` adds `Person` to the label set of the current node. It does not create a Property Graph relationship.
+
+This keeps the language small: there is one visible syntax for semantic references, and `LABEL` is the only core annotation with special non-relationship semantics.
 
 ## Why YAML?
 
 YAML frontmatter is already common in Markdown systems such as static site generators, documentation tools, and note-taking applications.
 
-PGM uses YAML frontmatter for node labels and node properties because it is already the conventional place for document metadata.
+PGM uses YAML frontmatter for node properties because it is already the conventional place for document metadata.
 
-The reserved key `labels` maps directly to Property Graph labels. All other keys become node properties.
+PGM 0.2.0 does not reserve the YAML key `labels`. If present, it is interpreted like any other node property.
 
-PGM does not define body-level node label syntax such as `:Invoice`. Node labels are document metadata, and frontmatter is already the Markdown ecosystem's established metadata channel. Keeping labels in YAML avoids a second way to describe the same node.
+Node labels are declared with `[:LABEL](...)` links so labels can point to Markdown files that describe the ontology.
 
 ## Why YAML Flow Mapping?
 
@@ -98,7 +111,7 @@ RDF is powerful and important, but it is not the smallest fit for this proposal.
 
 PGM is designed around the Property Graph model: nodes with labels and properties, and directed relationships with types and properties. That model maps naturally to openCypher and to how many users already think about graph databases.
 
-RDF export may be useful later, but RDF is intentionally not the core information model for PGM 0.1.2.
+RDF export may be useful later, but RDF is intentionally not the core information model for PGM 0.2.0.
 
 ## Why Not HTML Extensions?
 
@@ -126,12 +139,12 @@ Using one file as one node gives PGM an immediate canonical identity model witho
 
 ## Why Is the Link Destination Canonical?
 
-The visible label of a PGM semantic link defines the relationship descriptor.
+The visible label of a PGM semantic link defines the semantic annotation.
 
 The destination is the stable machine-readable reference to the target node. PGM therefore treats the destination as canonical.
 
-## Why Keep 0.1.2 So Small?
+## Why Keep 0.2.0 So Small?
 
 PGM should feel like CommonMark, YAML, or OpenAPI: a specification first, not an application framework.
 
-Features such as namespaces, ontology validation, RDF export, embedded graph queries, and inference rules are useful ideas. They are excluded from 0.1.2 because the core must remain obvious, interoperable, and easy to implement.
+Features such as namespaces, ontology validation, RDF export, embedded graph queries, and inference rules are useful ideas. They are excluded from 0.2.0 because the core must remain obvious, interoperable, and easy to implement.

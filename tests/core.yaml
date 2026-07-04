@@ -1,11 +1,23 @@
 cases:
   - name: outgoing relationship
     markdown: |
+      [:LABEL](Ontology/Person.md)
       [:knows](bob.md)
+    labels:
+      - Person
     relationships:
       - source: alice.md
         type: knows
         target: bob.md
+
+  - name: label annotation
+    markdown: |
+      [:LABEL](Ontology/Person.md)
+      [:LABEL](Ontology/Mathematician.md)
+    labels:
+      - Person
+      - Mathematician
+    relationships: []
 
   - name: direction marker syntax
     markdown: |
@@ -29,3 +41,9 @@ cases:
     markdown: |
       [:approvedBy {date](target.md)
     warnings: true
+
+  - name: label annotation with properties
+    markdown: |
+      [:LABEL {source: manual}](Ontology/Thing.md)
+    warnings: true
+    relationships: []

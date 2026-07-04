@@ -15,26 +15,28 @@ PGM is not a Markdown replacement. Every PGM document is still valid CommonMark.
 PGM interprets an ordinary Markdown corpus as a Property Graph:
 
 1. One Markdown file is one graph node.
-2. YAML frontmatter defines node labels and node properties.
-3. Ordinary CommonMark links define outgoing relationships when their visible label is a relationship descriptor.
-4. A relationship descriptor is `:` plus a relationship type and an optional YAML flow mapping.
-5. The link destination is canonical and identifies the target node.
+2. YAML frontmatter defines node properties.
+3. Ordinary CommonMark links define semantic annotations when their visible label begins with `:`.
+4. `:LABEL` adds a label to the current node and does not create a relationship.
+5. Every other annotation type defines an outgoing relationship.
+6. The link destination is canonical and identifies the target node or label reference.
 
 That is the whole core language.
 
-PGM 0.1.2 intentionally defines only outgoing relationships. A relationship is authored once, in the Markdown file representing its source node. This prevents conflicting definitions of the same edge across two files.
+PGM 0.2.0 intentionally defines only outgoing relationships. A relationship is authored once, in the Markdown file representing its source node. This prevents conflicting definitions of the same edge across two files.
 
 Processors may also support optional editor-specific extensions. For example, the Obsidian plugin prototypes semantic wikilinks such as `[[Peter Meier | :approvedBy {date: 2026-06-26}]]`.
 
 ```markdown
 ---
-labels: [Invoice, Document]
 status: approved
 amount: 1532
 currency: CHF
 ---
 # Invoice 2026-001
 
+[:LABEL](Ontology/Invoice.md)
+[:LABEL](Ontology/Document.md)
 [:approvedBy {date: 2026-06-26}](Peter%20Meier.md)
 [:partOf](Project%20Apollo.md)
 ```
@@ -51,6 +53,8 @@ graph LR
     invoice -- "approvedBy {date: 2026-06-26}" --> peter
     invoice -- "partOf" --> project
 ```
+
+The `:LABEL` links are Markdown links and ontology references. They do not become Property Graph relationships.
 
 ## Generated openCypher
 
@@ -106,9 +110,9 @@ print(graph_to_cypher(graph))
 ## Project Layout
 
 ```text
-SPEC.md              Normative 0.1.2 draft specification
+SPEC.md              Normative 0.2.0 draft specification
 RATIONALE.md         Design rationale
-GRAMMAR.ebnf         Minimal relationship-label grammar
+GRAMMAR.ebnf         Minimal semantic-link-label grammar
 examples/            Small coherent Invoice-Person-Project graph
 parser/              Python reference parser
 tests/               Parser tests and core cases
@@ -117,13 +121,13 @@ obsidian-plugin/     Minimal Obsidian editor integration
 
 ## Roadmap
 
-PGM 0.1.2 focuses only on the smallest useful core:
+PGM 0.2.0 focuses only on the smallest useful core:
 
 - Core specification
 - Reference parser
 - Obsidian plugin
 
-Future ideas such as namespaces, ontology validation, RDF export, embedded graph queries, and inference rules are intentionally excluded from 0.1.2. They can be explored only after the core remains simple, interoperable, and obvious.
+Future ideas such as namespaces, ontology validation, RDF export, embedded graph queries, and inference rules are intentionally excluded from 0.2.0. They can be explored only after the core remains simple, interoperable, and obvious.
 
 ## Guiding Principle
 

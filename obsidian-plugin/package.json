@@ -1,6 +1,6 @@
 {
   "name": "property-graph-markdown-obsidian",
-  "version": "0.1.2",
+  "version": "0.2.0",
   "description": "Obsidian plugin for Property Graph Markdown",
   "main": "main.js",
   "scripts": {

@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
-"""Reference parser for Property Graph Markdown 0.1.2.
+"""Reference parser for Property Graph Markdown 0.2.0.
 
 The implementation favors readability over completeness. It parses a directory
-of Markdown files, interprets YAML frontmatter as node metadata, extracts
+of Markdown files, interprets YAML frontmatter as node properties, extracts
 semantic CommonMark links, and emits openCypher-compatible statements.
 """
 
@@ -77,10 +77,10 @@ def parse_corpus(path: str | Path) -> Graph:
         node_id = _canonical_file_id(file_path, base)
         text = file_path.read_text(encoding="utf-8")
         frontmatter, body = split_frontmatter(text)
-        labels, properties = parse_node_metadata(frontmatter)
+        properties = parse_node_metadata(frontmatter)
 
         node = graph.ensure_node(node_id)
-        node.labels = labels
+        node.labels = []
         node.properties = properties
 
         for link in extract_links(body):
@@ -92,8 +92,17 @@ def parse_corpus(path: str | Path) -> Graph:
                 continue
 
             target_id = resolve_destination(link.destination, source_id=node_id)
-            graph.ensure_node(target_id)
+            if rel_type == "LABEL":
+                try:
+                    node_label = label_from_destination(target_id)
+                except ValueError as exc:
+                    graph.warnings.append(f"{node_id}: {exc}: {link.destination!r}")
+                    continue
+                if node_label not in node.labels:
+                    node.labels.append(node_label)
+                continue
 
+            graph.ensure_node(target_id)
             graph.relationships.append(
                 Relationship(
                     source=node_id,
@@ -121,28 +130,40 @@ def split_frontmatter(text: str) -> Tuple[str, str]:
     return "", text
 
 
-def parse_node_metadata(frontmatter: str) -> Tuple[List[str], Dict[str, Any]]:
+def parse_node_metadata(frontmatter: str) -> Dict[str, Any]:
     if not frontmatter.strip():
-        return [], {}
+        return {}
 
-    data = parse_yaml_mapping(frontmatter)
-    raw_labels = data.pop("labels", [])
-    labels = _normalize_labels(raw_labels)
-    return labels, data
+    return parse_yaml_mapping(frontmatter)
 
 
 def parse_relationship_label(label: str) -> Tuple[str, Dict[str, Any]]:
     if "->" in label or "<-" in label:
-        raise ValueError("direction markers are not supported in PGM 0.1.2")
+        raise ValueError("direction markers are not supported in PGM 0.2.0")
 
     match = SEMANTIC_RE.match(label.strip())
     if not match:
-        raise ValueError("malformed relationship descriptor")
+        raise ValueError("malformed semantic link label")
 
     rel_type = match.group("type")
     props_src = match.group("props")
+    if rel_type == "LABEL" and props_src:
+        raise ValueError("LABEL annotations must not contain relationship properties")
     properties = parse_yaml_flow_mapping(props_src) if props_src else {}
     return rel_type, properties
+
+
+def label_from_destination(destination: str) -> str:
+    """Derive a node label from a semantic LABEL link destination."""
+
+    without_fragment = destination.split("#", 1)[0]
+    basename = posixpath.basename(without_fragment)
+    if basename.lower().endswith(".md"):
+        basename = basename[:-3]
+    label = unquote(basename)
+    if not IDENTIFIER_RE.match(label):
+        raise ValueError(f"invalid node label destination: {destination!r}")
+    return label
 
 
 def extract_links(markdown: str) -> List[Link]:
@@ -247,22 +268,6 @@ def _markdown_files(root: Path) -> Iterable[Path]:
 
 def _canonical_file_id(path: Path, base: Path) -> str:
     return path.relative_to(base).as_posix()
-
-
-def _normalize_labels(value: Any) -> List[str]:
-    if value is None:
-        return []
-    if isinstance(value, str):
-        labels = [value]
-    elif isinstance(value, list):
-        labels = [str(item) for item in value]
-    else:
-        raise ValueError("labels must be a string or sequence of strings")
-
-    for label in labels:
-        if not IDENTIFIER_RE.match(label):
-            raise ValueError(f"invalid node label: {label!r}")
-    return labels
 
 
 def _normalize_yaml_value(value: Any) -> Any:

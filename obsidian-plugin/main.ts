@@ -28,7 +28,19 @@ interface PgmRelationship {
   properties: Record<string, string>;
 }
 
+interface PgmParsedAnnotation {
+  type: string;
+  display: string;
+  properties: Record<string, string>;
+}
+
+interface PgmExtraction {
+  relationships: PgmRelationship[];
+  labels: Map<string, Set<string>>;
+}
+
 const DEFAULT_RELATIONSHIP_TYPES = [
+  "LABEL",
   "approvedBy",
   "partOf",
   "memberOf",
@@ -73,6 +85,7 @@ const pgmHighlightExtension = ViewPlugin.fromClass(
 
 export default class PgmPlugin extends Plugin {
   relationships: PgmRelationship[] = [];
+  nodeLabels: Map<string, Set<string>> = new Map();
   relationshipTypes: Set<string> = new Set(DEFAULT_RELATIONSHIP_TYPES);
 
   async onload() {
@@ -108,18 +121,26 @@ export default class PgmPlugin extends Plugin {
 
   async scanVault(): Promise<PgmRelationship[]> {
     const next: PgmRelationship[] = [];
+    const nextLabels = new Map<string, Set<string>>();
     const files = this.app.vault.getMarkdownFiles();
 
     for (const file of files) {
       const text = await this.app.vault.cachedRead(file);
-      const relationships = extractRelationships(file.path, text);
-      for (const relationship of relationships) {
+      const extraction = extractSemanticAnnotations(file.path, text);
+      for (const [nodePath, labels] of extraction.labels) {
+        const target = ensureLabelSet(nextLabels, nodePath);
+        for (const label of labels) {
+          target.add(label);
+        }
+      }
+      for (const relationship of extraction.relationships) {
         next.push(relationship);
         this.relationshipTypes.add(relationship.type);
       }
     }
 
     this.relationships = next;
+    this.nodeLabels = nextLabels;
     return next;
   }
 }
@@ -186,27 +207,29 @@ class PgmGraphModal extends Modal {
     contentEl.addClass("pgm-modal");
     contentEl.createEl("h2", { text: "Property Graph Markdown" });
 
-    if (this.plugin.relationships.length === 0) {
+    if (this.plugin.relationships.length === 0 && this.plugin.nodeLabels.size === 0) {
       contentEl.createEl("p", { text: "No semantic relationships found." });
       return;
     }
 
     const graphEl = contentEl.createDiv({ cls: "pgm-graph-viewer" });
-    renderGraph(graphEl, this.plugin.relationships);
+    renderGraph(graphEl, this.plugin.relationships, this.plugin.nodeLabels);
   }
 }
 
-function extractRelationships(sourcePath: string, text: string): PgmRelationship[] {
+function extractSemanticAnnotations(sourcePath: string, text: string): PgmExtraction {
   const relationships: PgmRelationship[] = [];
-  extractCommonMarkRelationships(sourcePath, text, relationships);
-  extractSemanticWikilinkRelationships(sourcePath, text, relationships);
-  return relationships;
+  const labels = new Map<string, Set<string>>();
+  extractCommonMarkAnnotations(sourcePath, text, relationships, labels);
+  extractSemanticWikilinkAnnotations(sourcePath, text, relationships, labels);
+  return { relationships, labels };
 }
 
-function extractCommonMarkRelationships(
+function extractCommonMarkAnnotations(
   sourcePath: string,
   text: string,
-  relationships: PgmRelationship[]
+  relationships: PgmRelationship[],
+  labels: Map<string, Set<string>>
 ) {
   const linkRe = /\[([^\]\n]+)\]\(([^)]+)\)/g;
   let match: RegExpExecArray | null;
@@ -220,14 +243,15 @@ function extractCommonMarkRelationships(
     }
 
     const targetPath = normalizeDestination(sourcePath, destination);
-    addRelationship(relationships, sourcePath, targetPath, parsed);
+    addSemanticAnnotation(relationships, labels, sourcePath, targetPath, parsed);
   }
 }
 
-function extractSemanticWikilinkRelationships(
+function extractSemanticWikilinkAnnotations(
   sourcePath: string,
   text: string,
-  relationships: PgmRelationship[]
+  relationships: PgmRelationship[],
+  labels: Map<string, Set<string>>
 ) {
   const wikilinkRe = /\[\[([^\]\n|]+?)\s*\|\s*([^\]\n]+?)\s*\]\]/g;
   let match: RegExpExecArray | null;
@@ -241,19 +265,30 @@ function extractSemanticWikilinkRelationships(
     }
 
     const targetPath = normalizeWikilinkDestination(target);
-    addRelationship(relationships, sourcePath, targetPath, parsed);
+    addSemanticAnnotation(relationships, labels, sourcePath, targetPath, parsed);
   }
+}
+
+function addSemanticAnnotation(
+  relationships: PgmRelationship[],
+  labels: Map<string, Set<string>>,
+  sourcePath: string,
+  targetPath: string,
+  parsed: PgmParsedAnnotation
+) {
+  if (parsed.type === "LABEL") {
+    ensureLabelSet(labels, sourcePath).add(labelFromDestination(targetPath));
+    return;
+  }
+
+  addRelationship(relationships, sourcePath, targetPath, parsed);
 }
 
 function addRelationship(
   relationships: PgmRelationship[],
   sourcePath: string,
   targetPath: string,
-  parsed: {
-    type: string;
-    display: string;
-    properties: Record<string, string>;
-  }
+  parsed: PgmParsedAnnotation
 ) {
   relationships.push({
     source: sourcePath,
@@ -264,20 +299,21 @@ function addRelationship(
   });
 }
 
-function parseSemanticLabel(label: string): {
-  type: string;
-  display: string;
-  properties: Record<string, string>;
-} | null {
+function parseSemanticLabel(label: string): PgmParsedAnnotation | null {
   const match = label.trim().match(/^:([A-Za-z][A-Za-z0-9_]*)(?:\s*(\{.*\}))?$/);
   if (!match) {
+    return null;
+  }
+
+  const properties = parsePropertyMap(match[2]);
+  if (match[1] === "LABEL" && Object.keys(properties).length > 0) {
     return null;
   }
 
   return {
     type: match[1],
     display: "",
-    properties: parsePropertyMap(match[2])
+    properties
   };
 }
 
@@ -368,6 +404,22 @@ function normalizeWikilinkDestination(destination: string): string {
   return normalizePath(withExtension);
 }
 
+function ensureLabelSet(labels: Map<string, Set<string>>, nodePath: string): Set<string> {
+  let existing = labels.get(nodePath);
+  if (!existing) {
+    existing = new Set();
+    labels.set(nodePath, existing);
+  }
+  return existing;
+}
+
+function labelFromDestination(destination: string): string {
+  const withoutFragment = destination.split("#")[0];
+  const parts = withoutFragment.split("/");
+  const basename = parts[parts.length - 1] ?? withoutFragment;
+  return basename.replace(/\.md$/i, "");
+}
+
 function safeDecode(value: string): string {
   try {
     return decodeURIComponent(value);
@@ -376,11 +428,18 @@ function safeDecode(value: string): string {
   }
 }
 
-function renderGraph(container: HTMLElement, relationships: PgmRelationship[]) {
+function renderGraph(
+  container: HTMLElement,
+  relationships: PgmRelationship[],
+  nodeLabels: Map<string, Set<string>>
+) {
   const nodeSet = new Set<string>();
   for (const relationship of relationships) {
     nodeSet.add(relationship.source);
     nodeSet.add(relationship.target);
+  }
+  for (const node of nodeLabels.keys()) {
+    nodeSet.add(node);
   }
   const nodes: string[] = Array.from(nodeSet).sort();
   const width = 760;
@@ -459,7 +518,8 @@ function renderGraph(container: HTMLElement, relationships: PgmRelationship[]) {
     label.setAttribute("x", String(position.x));
     label.setAttribute("y", String(position.y + 52));
     label.classList.add("pgm-node-label");
-    label.textContent = shortName(node);
+    const labels = Array.from(nodeLabels.get(node) ?? []);
+    label.textContent = labels.length > 0 ? `${shortName(node)} :${labels.join(" :")}` : shortName(node);
     svg.appendChild(label);
   }
 

@@ -1,13 +1,14 @@
 # PGM Reference Parser
 
-`pgmark.py` is the small Python reference parser for Property Graph Markdown 0.1.2.
+`pgmark.py` is the small Python reference parser for Property Graph Markdown 0.2.0.
 
 It performs four steps:
 
 1. Recursively scans Markdown files.
-2. Parses YAML frontmatter into node labels and node properties.
-3. Extracts CommonMark links whose visible label is a relationship descriptor.
-4. Emits openCypher-compatible statements.
+2. Parses YAML frontmatter into node properties.
+3. Extracts CommonMark links whose visible label is a semantic annotation.
+4. Interprets `:LABEL` annotations as node labels.
+5. Emits openCypher-compatible statements.
 
 ## Install
 
