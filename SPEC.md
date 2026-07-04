@@ -118,7 +118,7 @@ Identifier ::= Letter (Letter | Digit | "_")*
 PropertyMap ::= YAMLFlowMapping
 ```
 
-`LABEL` is a reserved keyword with node label semantics. It SHALL be interpreted as a `NodeLabelMarker`, not as a relationship type.
+`LABEL` is the reserved marker for node label semantics. It SHALL be interpreted as a `NodeLabelMarker`, not as a relationship type.
 
 A `LABEL` annotation SHALL NOT include a `PropertyMap`.
 

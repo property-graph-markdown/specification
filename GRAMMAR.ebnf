@@ -20,6 +20,6 @@ PropertyMap ::=
     YAMLFlowMapping ;
 
 (* PropertyMap delegates to YAML 1.2 Flow Mapping. *)
-(* LABEL is a reserved keyword with Node label semantics. *)
+(* LABEL is the reserved marker for Node label semantics. *)
 (* LABEL must not be followed by PropertyMap. *)
 (* This grammar intentionally defines no Markdown block syntax. *)
