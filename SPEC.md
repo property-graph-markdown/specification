@@ -1,8 +1,8 @@
-# Property Graph Markdown (PGM) 0.2.0 Public Draft
+# Property Graph Markdown (PGM) 0.2.1 Public Draft
 
 ## Status
 
-This document defines Property Graph Markdown (PGM) version 0.2.0 Public Draft.
+This document defines Property Graph Markdown (PGM) version 0.2.1 Public Draft.
 
 PGM is an open, vendor-neutral specification for representing openCypher-compatible Property Graphs in CommonMark.
 
@@ -75,15 +75,15 @@ The label name SHALL be derived from the hyperlink destination by taking the fin
 
 ## Relationship Representation
 
-A CommonMark hyperlink whose visible label is a semantic link annotation SHALL be interpreted as a PGM semantic link.
+A CommonMark hyperlink whose visible label matches the semantic link grammar SHALL be interpreted as a PGM semantic link.
 
 The hyperlink destination SHALL define the target reference.
 
-The visible link label SHALL define the annotation. The annotation SHALL contain an annotation type and MAY contain a property map.
+The visible link label SHALL define either a node label declaration or a relationship descriptor.
 
-If the annotation type is `LABEL`, the semantic link SHALL define a node label on the current document node and SHALL NOT create a Property Graph relationship.
+If the semantic link is a `NodeLabel`, it SHALL define a node label on the current document node and SHALL NOT create a Property Graph relationship.
 
-For all other annotation types, the semantic link SHALL define an outgoing relationship. PGM 0.2.0 only defines outgoing relationships. The relationship SHALL be authored in the Markdown file that represents the source node.
+If the semantic link is a `RelationshipDescriptor`, it SHALL define an outgoing relationship. PGM 0.2.1 only defines outgoing relationships. The relationship SHALL be authored in the Markdown file that represents the source node.
 
 Example:
 
@@ -94,35 +94,35 @@ Example:
 
 This defines the node label `Person` on the current document node and an outgoing relationship of type `approvedBy` from the current document node to `Peter Meier.md`.
 
-PGM 0.2.0 does not define direction-marker syntax. A label containing `->` or `<-` SHALL NOT create a PGM relationship.
+PGM 0.2.1 does not define direction-marker syntax. A label containing `->` or `<-` SHALL NOT create a PGM relationship.
 
 This restriction avoids redundant syntax and duplicate or conflicting definitions of the same relationship across two Markdown files.
 
 ## Semantic Link Grammar
 
-The semantic hyperlink label grammar is:
+The semantic link grammar is:
 
 ```ebnf
-SemanticLinkLabel ::=
-    LabelDescriptor
+SemanticLink ::=
+    NodeLabel
   | RelationshipDescriptor
 
-LabelDescriptor ::= ":LABEL"
+NodeLabel ::= ":LABEL"
 
-RelationshipDescriptor ::= ":" AnnotationType PropertyMap?
+RelationshipDescriptor ::= ":" RelationshipType PropertyMap?
 
-AnnotationType ::= Identifier
+RelationshipType ::= Identifier
 
 Identifier ::= Letter (Letter | Digit | "_")*
 
 PropertyMap ::= YAMLFlowMapping
 ```
 
-`LABEL` is a reserved `AnnotationType` with node label semantics. It SHALL be interpreted as a `LabelDescriptor`, not as a relationship type.
+`LABEL` is a reserved keyword with node label semantics. It SHALL be interpreted as a `NodeLabel`, not as a relationship type.
 
 A `LABEL` annotation SHALL NOT include a `PropertyMap`.
 
-Annotation types SHALL be case-sensitive. Uppercase relationship types MAY be used by convention, but are not required by this specification.
+Relationship types SHALL be case-sensitive. Uppercase relationship types MAY be used by convention, but are not required by this specification.
 
 `PropertyMap` SHALL be a YAML 1.2 flow mapping.
 
@@ -143,9 +143,9 @@ A conforming processor SHALL:
 3. Parse YAML frontmatter, when present.
 4. Assign all frontmatter entries as node properties.
 5. Parse CommonMark hyperlinks.
-6. Treat only hyperlinks whose visible label is a semantic link annotation as PGM semantic links.
-7. For semantic links with annotation type `LABEL`, assign a node label to the current document node and do not create a relationship.
-8. For all other semantic links, create outgoing relationships using the annotation type as the relationship type.
+6. Treat only hyperlinks whose visible label matches the semantic link grammar as PGM semantic links.
+7. For `NodeLabel` semantic links, assign a node label to the current document node and do not create a relationship.
+8. For `RelationshipDescriptor` semantic links, create outgoing relationships using the relationship type.
 9. Resolve hyperlink destinations to canonical node identifiers.
 10. Emit, store, or expose an openCypher-compatible Property Graph.
 
@@ -168,14 +168,14 @@ A processor MAY support semantic wikilinks for environments such as Obsidian.
 A semantic wikilink has the form:
 
 ```markdown
-[[Target | :annotationType {property: value}]]
+[[Target | :relationshipType {property: value}]]
 ```
 
-The target part SHALL identify the target reference. The annotation part SHALL follow the PGM semantic link label grammar without the surrounding CommonMark link brackets.
+The target part SHALL identify the target reference. The label part SHALL follow the PGM semantic link grammar without the surrounding CommonMark link brackets.
 
-If the annotation type is `LABEL`, a semantic wikilink SHALL define a node label on the current document node and SHALL NOT create a Property Graph relationship.
+If the semantic wikilink label is a `NodeLabel`, it SHALL define a node label on the current document node and SHALL NOT create a Property Graph relationship.
 
-For all other annotation types, a semantic wikilink SHALL define an outgoing relationship from the current document node to the target node.
+If the semantic wikilink label is a `RelationshipDescriptor`, it SHALL define an outgoing relationship from the current document node to the target node.
 
 The target resolution rules for wikilinks are implementation-defined. A processor SHOULD canonicalize semantic wikilink targets to the same node identifier form used for CommonMark hyperlink destinations.
 
@@ -191,12 +191,12 @@ A Markdown renderer that does not understand PGM SHALL still render PGM document
 
 ## Conformance
 
-A document conforms to PGM 0.2.0 if:
+A document conforms to PGM 0.2.1 if:
 
 - it is valid CommonMark;
 - any node properties intended for PGM are encoded as YAML frontmatter;
 - any semantic link labels follow the grammar in this specification.
 
-A processor conforms to PGM 0.2.0 if it implements the processing model above and preserves the semantics defined by the abstract information model.
+A processor conforms to PGM 0.2.1 if it implements the processing model above and preserves the semantics defined by the abstract information model.
 
-Extensions MAY be implemented, but they SHALL NOT change the meaning of conforming PGM 0.2.0 documents.
+Extensions MAY be implemented, but they SHALL NOT change the meaning of conforming PGM 0.2.1 documents.

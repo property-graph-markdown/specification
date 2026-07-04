@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Reference parser for Property Graph Markdown 0.2.0.
+"""Reference parser for Property Graph Markdown 0.2.1.
 
 The implementation favors readability over completeness. It parses a directory
 of Markdown files, interprets YAML frontmatter as node properties, extracts
@@ -139,7 +139,7 @@ def parse_node_metadata(frontmatter: str) -> Dict[str, Any]:
 
 def parse_relationship_label(label: str) -> Tuple[str, Dict[str, Any]]:
     if "->" in label or "<-" in label:
-        raise ValueError("direction markers are not supported in PGM 0.2.0")
+        raise ValueError("direction markers are not supported in PGM 0.2.1")
 
     match = SEMANTIC_RE.match(label.strip())
     if not match:
