@@ -1,49 +1,72 @@
 cases:
+  - name: node label
+    markdown: |
+      [:Person]()
+    labels: [Person]
+    nodeProperties: {}
+    relationships: []
+
+  - name: node label and properties
+    markdown: |
+      [:Person {name: "Ada", born: 1815}]()
+    labels: [Person]
+    nodeProperties: {name: Ada, born: 1815}
+
+  - name: multiple node annotations
+    markdown: |
+      [:Person {name: "Ada"}]()
+      [:Mathematician {born: 1815}]()
+    labels: [Person, Mathematician]
+    nodeProperties: {name: Ada, born: 1815}
+
   - name: outgoing relationship
     markdown: |
-      [:LABEL](Ontology/Person.md)
       [:knows](bob.md)
-    labels:
-      - Person
     relationships:
       - source: alice.md
         type: knows
         target: bob.md
 
-  - name: label annotation
-    markdown: |
-      [:LABEL](Ontology/Person.md)
-      [:LABEL](Ontology/Mathematician.md)
-    labels:
-      - Person
-      - Mathematician
-    relationships: []
-
-  - name: direction marker syntax
-    markdown: |
-      [:approvedBy -> Invoice](invoice.md)
-    relationships: []
-    warnings: true
-
   - name: relationship properties
     markdown: |
       [:approvedBy {date: 2026-06-26, confidence: 0.98}](peter.md)
-    properties:
+    relationshipProperties:
       date: 2026-06-26
       confidence: 0.98
 
-  - name: ordinary hyperlink
+  - name: exact duplicate relationship
     markdown: |
-      [Read the invoice](invoice.md)
+      [:visited {year: 1830}](London.md)
+      [:visited {year: 1830}](London.md)
+    relationshipCount: 1
+
+  - name: same endpoints with different properties
+    markdown: |
+      [:visited {year: 1830}](London.md)
+      [:visited {year: 1831}](London.md)
+    relationshipCount: 2
+
+  - name: ordinary empty link
+    markdown: |
+      [coming soon]()
+    labels: []
     relationships: []
 
-  - name: malformed semantic relationship
+  - name: wikilink compatibility is non-semantic
+    markdown: |
+      [[London | :BORN_IN {year: 1815}]]
+    relationships: []
+
+  - name: frontmatter ignored
+    markdown: |
+      ---
+      labels: [Person]
+      properties: {born: 1815}
+      ---
+    labels: []
+    nodeProperties: {}
+
+  - name: malformed annotation
     markdown: |
       [:approvedBy {date](target.md)
     warnings: true
-
-  - name: label annotation with properties
-    markdown: |
-      [:LABEL {source: manual}](Ontology/Thing.md)
-    warnings: true
-    relationships: []

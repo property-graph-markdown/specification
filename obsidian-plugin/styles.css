@@ -23,6 +23,12 @@
   min-width: min(860px, 92vw);
 }
 
+.pgm-validation-errors {
+  color: var(--text-error);
+  font-family: var(--font-monospace);
+  font-size: var(--font-ui-small);
+}
+
 .pgm-graph-viewer {
   border: 1px solid var(--background-modifier-border);
   border-radius: 8px;

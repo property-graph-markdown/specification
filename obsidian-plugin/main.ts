@@ -9,7 +9,9 @@ import {
   Notice,
   Plugin,
   TFile,
-  normalizePath
+  normalizePath,
+  parseLinktext,
+  parseYaml
 } from "obsidian";
 import {
   Decoration,
@@ -19,28 +21,37 @@ import {
   ViewPlugin,
   ViewUpdate
 } from "@codemirror/view";
+import MarkdownIt from "markdown-it";
 
 interface PgmRelationship {
+  id: string;
   source: string;
   target: string;
   type: string;
-  display: string;
-  properties: Record<string, string>;
+  properties: Record<string, unknown>;
+}
+
+interface PgmNode {
+  id: string;
+  labels: string[];
+  properties: Record<string, unknown>;
+  relationships: PgmRelationship[];
 }
 
 interface PgmParsedAnnotation {
-  type: string;
-  display: string;
-  properties: Record<string, string>;
+  className: string;
+  properties: Record<string, unknown>;
 }
 
 interface PgmExtraction {
-  relationships: PgmRelationship[];
-  labels: Map<string, Set<string>>;
+  node: PgmNode;
+  errors: string[];
 }
 
-const DEFAULT_RELATIONSHIP_TYPES = [
-  "LABEL",
+const DEFAULT_CLASS_NAMES = [
+  "Person",
+  "Mathematician",
+  "Document",
   "approvedBy",
   "partOf",
   "memberOf",
@@ -48,19 +59,14 @@ const DEFAULT_RELATIONSHIP_TYPES = [
   "relatesTo"
 ];
 
-const RELATIONSHIP_TYPE_SOURCE = "[A-Za-z][A-Za-z0-9_]*";
-const PROPERTY_MAP_SOURCE = "(?:\\s*\\{[^\\]\\n]*\\})?";
+const CLASS_NAME_SOURCE = "[A-Za-z][A-Za-z0-9_]*";
+const PROPERTY_MAP_SOURCE = "(?:[ \\t]+\\{[^}\\n]*\\})?";
 const COMMONMARK_SEMANTIC_LINK_SOURCE =
-  `\\[:${RELATIONSHIP_TYPE_SOURCE}${PROPERTY_MAP_SOURCE}\\]\\([^)]+\\)`;
-const WIKILINK_SEMANTIC_LINK_SOURCE =
-  `\\[\\[[^\\]\\n|]+\\s*\\|\\s*:${RELATIONSHIP_TYPE_SOURCE}${PROPERTY_MAP_SOURCE}\\s*\\]\\]`;
-const SUGGEST_TRIGGER_RE = /(?:\[:|\[\[[^\]\n|]+\s*\|\s*:)([A-Za-z_][A-Za-z0-9_]*)?$/;
+  `\\[:${CLASS_NAME_SOURCE}${PROPERTY_MAP_SOURCE}\\]\\((?:<>|[^)\\n]*)\\)`;
+const SUGGEST_TRIGGER_RE = /\[:([A-Za-z_][A-Za-z0-9_]*)?$/;
 
 const semanticLinkMatcher = new MatchDecorator({
-  regexp: new RegExp(
-    `(?:${COMMONMARK_SEMANTIC_LINK_SOURCE}|${WIKILINK_SEMANTIC_LINK_SOURCE})`,
-    "g"
-  ),
+  regexp: new RegExp(COMMONMARK_SEMANTIC_LINK_SOURCE, "g"),
   decoration: Decoration.mark({ class: "pgm-semantic-link" })
 });
 
@@ -85,8 +91,10 @@ const pgmHighlightExtension = ViewPlugin.fromClass(
 
 export default class PgmPlugin extends Plugin {
   relationships: PgmRelationship[] = [];
+  nodes: Map<string, PgmNode> = new Map();
   nodeLabels: Map<string, Set<string>> = new Map();
-  relationshipTypes: Set<string> = new Set(DEFAULT_RELATIONSHIP_TYPES);
+  classNames: Set<string> = new Set(DEFAULT_CLASS_NAMES);
+  validationErrors: string[] = [];
 
   async onload() {
     this.registerEditorExtension(pgmHighlightExtension);
@@ -104,7 +112,10 @@ export default class PgmPlugin extends Plugin {
       name: "Scan vault",
       callback: async () => {
         await this.scanVault();
-        new Notice(`PGM: ${this.relationships.length} relationships found`);
+        const diagnostic = this.validationErrors.length > 0
+          ? `, ${this.validationErrors.length} validation errors`
+          : "";
+        new Notice(`PGM: ${this.relationships.length} relationships${diagnostic}`);
       }
     });
 
@@ -116,31 +127,64 @@ export default class PgmPlugin extends Plugin {
       }
     });
 
+    this.addCommand({
+      id: "convert-pgm-wikilinks",
+      name: "Convert compatible wikilinks to CommonMark",
+      editorCallback: (editor, context) => {
+        const file = context.file;
+        if (!file) {
+          new Notice("PGM: No active Markdown file");
+          return;
+        }
+
+        const result = convertSemanticWikilinks(
+          editor.getValue(),
+          file.path,
+          (linkPath) => this.app.metadataCache.getFirstLinkpathDest(linkPath, file.path)
+        );
+        if (result.count === 0) {
+          new Notice("PGM: No compatible wikilinks found");
+          return;
+        }
+
+        editor.setValue(result.markdown);
+        new Notice(`PGM: Converted ${result.count} wikilinks to CommonMark`);
+      }
+    });
+
     await this.scanVault();
   }
 
   async scanVault(): Promise<PgmRelationship[]> {
     const next: PgmRelationship[] = [];
+    const nextNodes = new Map<string, PgmNode>();
     const nextLabels = new Map<string, Set<string>>();
+    const nextErrors: string[] = [];
     const files = this.app.vault.getMarkdownFiles();
 
     for (const file of files) {
       const text = await this.app.vault.cachedRead(file);
       const extraction = extractSemanticAnnotations(file.path, text);
-      for (const [nodePath, labels] of extraction.labels) {
-        const target = ensureLabelSet(nextLabels, nodePath);
-        for (const label of labels) {
-          target.add(label);
-        }
+      nextNodes.set(file.path, extraction.node);
+      if (extraction.node.labels.length > 0) {
+        nextLabels.set(file.path, new Set(extraction.node.labels));
       }
-      for (const relationship of extraction.relationships) {
+      for (const label of extraction.node.labels) {
+        this.classNames.add(label);
+      }
+      for (const relationship of extraction.node.relationships) {
         next.push(relationship);
-        this.relationshipTypes.add(relationship.type);
+        this.classNames.add(relationship.type);
+      }
+      for (const error of extraction.errors) {
+        nextErrors.push(`${file.path}: ${error}`);
       }
     }
 
     this.relationships = next;
+    this.nodes = nextNodes;
     this.nodeLabels = nextLabels;
+    this.validationErrors = nextErrors;
     return next;
   }
 }
@@ -170,7 +214,7 @@ class PgmRelationshipSuggest extends EditorSuggest<string> {
 
   getSuggestions(context: EditorSuggestContext): string[] {
     const query = context.query.toLowerCase();
-    return Array.from(this.plugin.relationshipTypes)
+    return Array.from(this.plugin.classNames)
       .sort()
       .filter((type) => type.toLowerCase().startsWith(query))
       .slice(0, 20);
@@ -207,8 +251,15 @@ class PgmGraphModal extends Modal {
     contentEl.addClass("pgm-modal");
     contentEl.createEl("h2", { text: "Property Graph Markdown" });
 
+    if (this.plugin.validationErrors.length > 0) {
+      const errors = contentEl.createEl("ul", { cls: "pgm-validation-errors" });
+      for (const error of this.plugin.validationErrors) {
+        errors.createEl("li", { text: error });
+      }
+    }
+
     if (this.plugin.relationships.length === 0 && this.plugin.nodeLabels.size === 0) {
-      contentEl.createEl("p", { text: "No semantic relationships found." });
+      contentEl.createEl("p", { text: "No PGM annotations found." });
       return;
     }
 
@@ -218,126 +269,334 @@ class PgmGraphModal extends Modal {
 }
 
 function extractSemanticAnnotations(sourcePath: string, text: string): PgmExtraction {
-  const relationships: PgmRelationship[] = [];
-  const labels = new Map<string, Set<string>>();
-  extractCommonMarkAnnotations(sourcePath, text, relationships, labels);
-  extractSemanticWikilinkAnnotations(sourcePath, text, relationships, labels);
-  return { relationships, labels };
+  const node: PgmNode = {
+    id: sourcePath,
+    labels: [],
+    properties: {},
+    relationships: []
+  };
+  const errors: string[] = [];
+  const body = withoutFrontMatter(text);
+  extractCommonMarkAnnotations(node, body, errors);
+  return { node, errors };
 }
 
 function extractCommonMarkAnnotations(
-  sourcePath: string,
+  node: PgmNode,
   text: string,
-  relationships: PgmRelationship[],
-  labels: Map<string, Set<string>>
+  errors: string[]
 ) {
-  const linkRe = /\[([^\]\n]+)\]\(([^)]+)\)/g;
-  let match: RegExpExecArray | null;
+  const parser = new MarkdownIt("commonmark");
+  const tokens = parser.parse(text, {});
 
-  while ((match = linkRe.exec(text)) !== null) {
-    const label = match[1];
-    const destination = match[2].trim().split(/\s+/)[0];
-    const parsed = parseSemanticLabel(label);
-    if (!parsed) {
+  for (const token of tokens) {
+    if (token.type !== "inline" || !token.children) {
       continue;
     }
 
-    const targetPath = normalizeDestination(sourcePath, destination);
-    addSemanticAnnotation(relationships, labels, sourcePath, targetPath, parsed);
-  }
-}
+    const children = token.children;
+    let index = 0;
+    while (index < children.length) {
+      const child = children[index];
+      if (child.type !== "link_open") {
+        index += 1;
+        continue;
+      }
 
-function extractSemanticWikilinkAnnotations(
-  sourcePath: string,
-  text: string,
-  relationships: PgmRelationship[],
-  labels: Map<string, Set<string>>
-) {
-  const wikilinkRe = /\[\[([^\]\n|]+?)\s*\|\s*([^\]\n]+?)\s*\]\]/g;
-  let match: RegExpExecArray | null;
+      const destination = child.attrGet("href") ?? "";
+      const labelParts: string[] = [];
+      index += 1;
+      while (index < children.length && children[index].type !== "link_close") {
+        if (children[index].content) {
+          labelParts.push(children[index].content);
+        }
+        index += 1;
+      }
 
-  while ((match = wikilinkRe.exec(text)) !== null) {
-    const target = match[1].trim();
-    const label = match[2].trim();
-    const parsed = parseSemanticLabel(label);
-    if (!parsed) {
-      continue;
+      applyCommonMarkAnnotation(node, labelParts.join(""), destination, errors);
+      index += 1;
     }
-
-    const targetPath = normalizeWikilinkDestination(target);
-    addSemanticAnnotation(relationships, labels, sourcePath, targetPath, parsed);
   }
 }
 
-function addSemanticAnnotation(
-  relationships: PgmRelationship[],
-  labels: Map<string, Set<string>>,
-  sourcePath: string,
-  targetPath: string,
-  parsed: PgmParsedAnnotation
+function applyCommonMarkAnnotation(
+  node: PgmNode,
+  label: string,
+  destination: string,
+  errors: string[]
 ) {
-  if (parsed.type === "LABEL") {
-    ensureLabelSet(labels, sourcePath).add(labelFromDestination(targetPath));
+  if (!label.trim().startsWith(":")) {
     return;
   }
 
-  addRelationship(relationships, sourcePath, targetPath, parsed);
+  try {
+    const parsed = parseClassExpression(label);
+    if (destination === "") {
+      if (!node.labels.includes(parsed.className)) {
+        node.labels.push(parsed.className);
+      }
+      mergeNodeProperties(node, parsed.properties, errors);
+      return;
+    }
+
+    addRelationship(node, normalizeDestination(node.id, destination), parsed);
+  } catch (error) {
+    errors.push(errorMessage(error));
+  }
 }
 
 function addRelationship(
-  relationships: PgmRelationship[],
-  sourcePath: string,
+  node: PgmNode,
   targetPath: string,
   parsed: PgmParsedAnnotation
 ) {
-  relationships.push({
-    source: sourcePath,
+  const id = relationshipFingerprint(node.id, parsed.className, targetPath, parsed.properties);
+  if (node.relationships.some((relationship) => relationship.id === id)) {
+    return;
+  }
+
+  node.relationships.push({
+    id,
+    source: node.id,
     target: targetPath,
-    type: parsed.type,
-    display: parsed.display,
+    type: parsed.className,
     properties: parsed.properties
   });
 }
 
-function parseSemanticLabel(label: string): PgmParsedAnnotation | null {
-  const match = label.trim().match(/^:([A-Za-z][A-Za-z0-9_]*)(?:\s*(\{.*\}))?$/);
+function relationshipFingerprint(
+  source: string,
+  relationshipType: string,
+  target: string,
+  properties: Record<string, unknown>
+): string {
+  return JSON.stringify([
+    source,
+    relationshipType,
+    target,
+    canonicalProperties(properties)
+  ]);
+}
+
+function canonicalProperties(properties: Record<string, unknown>): Record<string, unknown> {
+  const canonical: Record<string, unknown> = {};
+  for (const key of Object.keys(properties).sort()) {
+    canonical[key] = canonicalPropertyValue(properties[key]);
+  }
+  return canonical;
+}
+
+function canonicalPropertyValue(value: unknown): unknown {
+  if (Array.isArray(value)) {
+    return value.map(canonicalPropertyValue);
+  }
+  return value;
+}
+
+function parseClassExpression(label: string): PgmParsedAnnotation {
+  if (label.includes("->") || label.includes("<-")) {
+    throw new Error("Direction markers are not supported in PGM 0.3.0");
+  }
+
+  const match = label.trim().match(/^:([A-Za-z][A-Za-z0-9_]*)(?:[ \t]+(\{.*\}))?$/);
   if (!match) {
-    return null;
+    throw new Error(`Malformed PGM class expression: ${label}`);
   }
 
   const properties = parsePropertyMap(match[2]);
-  if (match[1] === "LABEL" && Object.keys(properties).length > 0) {
-    return null;
-  }
-
   return {
-    type: match[1],
-    display: "",
+    className: match[1],
     properties
   };
 }
 
-function parsePropertyMap(source: string | undefined): Record<string, string> {
+function tryParseClassExpression(label: string): PgmParsedAnnotation | null {
+  try {
+    return parseClassExpression(label);
+  } catch {
+    return null;
+  }
+}
+
+function parsePropertyMap(source: string | undefined): Record<string, unknown> {
   if (!source) {
     return {};
   }
 
-  const inner = source.trim().replace(/^\{/, "").replace(/\}$/, "").trim();
-  if (!inner) {
-    return {};
+  let parsed: unknown;
+  try {
+    parsed = parseYaml(source);
+  } catch {
+    throw new Error("Invalid YAML flow mapping");
   }
 
-  const properties: Record<string, string> = {};
-  for (const part of inner.split(",")) {
-    const index = part.indexOf(":");
-    if (index === -1) {
-      continue;
+  if (!isRecord(parsed)) {
+    throw new Error("Property map must be a YAML flow mapping");
+  }
+  const properties: Record<string, unknown> = {};
+  for (const [key, value] of Object.entries(parsed)) {
+    const normalized = normalizePropertyValue(value);
+    if (!isPropertyValue(normalized)) {
+      throw new Error(`Property ${key} has an unsupported value type`);
     }
-    const key = part.slice(0, index).trim();
-    const value = part.slice(index + 1).trim();
-    properties[key] = value;
+    properties[key] = normalized;
   }
   return properties;
+}
+
+function mergeNodeProperties(
+  node: PgmNode,
+  additions: Record<string, unknown>,
+  errors: string[]
+) {
+  for (const [key, value] of Object.entries(additions)) {
+    if (!(key in node.properties)) {
+      node.properties[key] = value;
+      continue;
+    }
+    if (!propertyValuesEqual(node.properties[key], value)) {
+      errors.push(`Conflicting node property ${key}`);
+    }
+  }
+}
+
+function propertyValuesEqual(left: unknown, right: unknown): boolean {
+  if (typeof left === "number" && typeof right === "number") {
+    return left === right;
+  }
+  if (Array.isArray(left) && Array.isArray(right)) {
+    return left.length === right.length
+      && left.every((value, index) => propertyValuesEqual(value, right[index]));
+  }
+  return typeof left === typeof right && left === right;
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+function isPropertyValue(value: unknown): boolean {
+  if (typeof value === "number") {
+    return Number.isFinite(value);
+  }
+  if (value === null || ["string", "boolean"].includes(typeof value)) {
+    return true;
+  }
+  return Array.isArray(value) && value.every(isPropertyValue);
+}
+
+function normalizePropertyValue(value: unknown): unknown {
+  if (value instanceof Date) {
+    return value.toISOString().slice(0, 10);
+  }
+  if (Array.isArray(value)) {
+    return value.map(normalizePropertyValue);
+  }
+  return value;
+}
+
+function errorMessage(error: unknown): string {
+  return error instanceof Error ? error.message : String(error);
+}
+
+function withoutFrontMatter(text: string): string {
+  const match = text.match(/^(?:\uFEFF)?---[ \t]*\r?\n[\s\S]*?\r?\n---[ \t]*(?:\r?\n|$)/);
+  return match ? text.slice(match[0].length) : text;
+}
+
+function convertSemanticWikilinks(
+  markdown: string,
+  sourcePath: string,
+  resolveTarget: (linkPath: string) => TFile | null
+): { markdown: string; count: number } {
+  const lines = markdown.match(/[^\n]*(?:\n|$)/g) ?? [];
+  let count = 0;
+  let inFrontMatter = false;
+  let fenceCharacter = "";
+  let fenceLength = 0;
+
+  const converted = lines.map((line, index) => {
+    const content = line.replace(/\r?\n$/, "");
+    if (index === 0 && /^(?:\uFEFF)?---[ \t]*$/.test(content)) {
+      inFrontMatter = true;
+      return line;
+    }
+    if (inFrontMatter) {
+      if (/^---[ \t]*$/.test(content)) {
+        inFrontMatter = false;
+      }
+      return line;
+    }
+
+    const fence = content.match(/^ {0,3}(`{3,}|~{3,})/);
+    if (fence) {
+      const character = fence[1][0];
+      if (!fenceCharacter) {
+        fenceCharacter = character;
+        fenceLength = fence[1].length;
+      } else if (fenceCharacter === character && fence[1].length >= fenceLength) {
+        fenceCharacter = "";
+        fenceLength = 0;
+      }
+      return line;
+    }
+    if (fenceCharacter || content.includes("`")) {
+      return line;
+    }
+
+    return line.replace(
+      /\[\[([^\]\n|]+?)\s*\|\s*(:[^\n]*?)\]\]/g,
+      (original, rawTarget: string, rawLabel: string) => {
+        const label = rawLabel.trim();
+        if (!tryParseClassExpression(label)) {
+          return original;
+        }
+
+        const destination = commonMarkDestinationForWikilink(
+          rawTarget.trim(),
+          sourcePath,
+          resolveTarget
+        );
+        count += 1;
+        return `[${label}](${destination})`;
+      }
+    );
+  });
+
+  return { markdown: converted.join(""), count };
+}
+
+function commonMarkDestinationForWikilink(
+  target: string,
+  sourcePath: string,
+  resolveTarget: (linkPath: string) => TFile | null
+): string {
+  const parsed = parseLinktext(target);
+  const resolved = parsed.path ? resolveTarget(parsed.path) : null;
+  let path = parsed.path;
+
+  if (resolved) {
+    path = relativeMarkdownPath(sourcePath, resolved.path);
+  } else if (path && !/^[a-z][a-z0-9+.-]*:/i.test(path) && !path.toLowerCase().endsWith(".md")) {
+    path = `${path}.md`;
+  }
+
+  return encodeURI(`${path}${parsed.subpath}`)
+    .replace(/\(/g, "%28")
+    .replace(/\)/g, "%29");
+}
+
+function relativeMarkdownPath(sourcePath: string, targetPath: string): string {
+  const sourceParts = sourcePath.split("/");
+  sourceParts.pop();
+  const targetParts = targetPath.split("/");
+
+  while (sourceParts.length > 0 && targetParts.length > 0 && sourceParts[0] === targetParts[0]) {
+    sourceParts.shift();
+    targetParts.shift();
+  }
+
+  return `${"../".repeat(sourceParts.length)}${targetParts.join("/")}`;
 }
 
 function renderLinksAsLabelAndDestination(root: HTMLElement) {
@@ -353,10 +612,14 @@ function renderLinksAsLabelAndDestination(root: HTMLElement) {
 
     const rawLabel = link.textContent?.trim() ?? "";
     const destination = readableDestination(link);
+    const annotation = tryParseClassExpression(rawLabel);
+    if (annotation) {
+      link.classList.add("pgm-semantic-link");
+    }
     if (!rawLabel || !destination || rawLabel === destination) {
       continue;
     }
-    const label = parseSemanticLabel(rawLabel) ? rawLabel.slice(1) : rawLabel;
+    const label = annotation ? rawLabel.slice(1) : rawLabel;
 
     const labelEl = document.createElement("span");
     labelEl.classList.add("pgm-link-label");
@@ -382,6 +645,10 @@ function normalizeDestination(sourcePath: string, destination: string): string {
   const noFragment = destination.split("#")[0];
   const decoded = safeDecode(noFragment);
 
+  if (!decoded && destination.startsWith("#")) {
+    return sourcePath;
+  }
+
   if (/^[a-z][a-z0-9+.-]*:/i.test(decoded)) {
     return decoded;
   }
@@ -389,35 +656,6 @@ function normalizeDestination(sourcePath: string, destination: string): string {
   const slash = sourcePath.lastIndexOf("/");
   const prefix = slash === -1 ? "" : sourcePath.slice(0, slash + 1);
   return normalizePath(prefix + decoded);
-}
-
-function normalizeWikilinkDestination(destination: string): string {
-  const withoutBlock = destination.split("^")[0];
-  const withoutFragment = withoutBlock.split("#")[0];
-  const decoded = safeDecode(withoutFragment.trim());
-
-  if (/^[a-z][a-z0-9+.-]*:/i.test(decoded)) {
-    return decoded;
-  }
-
-  const withExtension = decoded.toLowerCase().endsWith(".md") ? decoded : `${decoded}.md`;
-  return normalizePath(withExtension);
-}
-
-function ensureLabelSet(labels: Map<string, Set<string>>, nodePath: string): Set<string> {
-  let existing = labels.get(nodePath);
-  if (!existing) {
-    existing = new Set();
-    labels.set(nodePath, existing);
-  }
-  return existing;
-}
-
-function labelFromDestination(destination: string): string {
-  const withoutFragment = destination.split("#")[0];
-  const parts = withoutFragment.split("/");
-  const basename = parts[parts.length - 1] ?? withoutFragment;
-  return basename.replace(/\.md$/i, "");
 }
 
 function safeDecode(value: string): string {

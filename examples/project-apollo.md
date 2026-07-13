@@ -1,9 +1,8 @@
 ---
-name: Project Apollo
-status: active
+title: Project Apollo
 ---
 # Project Apollo
 
-[:LABEL](Ontology/Project.md)
+[:Project {name: "Project Apollo", status: active}]()
 
 Project Apollo collects approved finance documents and delivery records.

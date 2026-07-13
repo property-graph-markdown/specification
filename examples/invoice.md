@@ -1,14 +1,12 @@
 ---
 title: Invoice 2026-001
-status: approved
-amount: 1532
-currency: CHF
+tags: [finance]
 ---
 # Invoice 2026-001
 
-[:LABEL](Ontology/Invoice.md)
+[:Invoice {title: "Invoice 2026-001", status: approved, amount: 1532, currency: CHF}]()
 
-[:LABEL](Ontology/Document.md)
+[:Document]()
 
 [:approvedBy {date: 2026-06-26}](peter-meier.md)
 

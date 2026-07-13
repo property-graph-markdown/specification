@@ -1,6 +1,6 @@
 {
   "name": "property-graph-markdown-obsidian",
-  "version": "0.2.1",
+  "version": "0.3.0",
   "description": "Obsidian plugin for Property Graph Markdown",
   "main": "main.js",
   "scripts": {
@@ -13,9 +13,14 @@
     "property-graph",
     "opencypher"
   ],
+  "repository": "https://github.com/property-graph-markdown/specification.git",
   "license": "MIT",
+  "dependencies": {
+    "markdown-it": "^14.1.0"
+  },
   "devDependencies": {
     "@codemirror/view": "^6.28.0",
+    "@types/markdown-it": "^14.1.2",
     "builtin-modules": "^3.3.0",
     "esbuild": "^0.23.0",
     "obsidian": "^1.5.12",

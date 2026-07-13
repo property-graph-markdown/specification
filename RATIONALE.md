@@ -1,150 +1,122 @@
 # Rationale
 
-PGM is intentionally small. This document explains the design decisions behind the 0.2.1 draft.
+PGM is intentionally small. This document explains the design decisions behind the 0.3.0 draft.
 
 ## Why CommonMark?
 
 CommonMark is the most precise widely adopted definition of Markdown. It is portable, readable, and already supported by editors, renderers, static site generators, documentation systems, and AI tooling.
 
-PGM uses CommonMark because the goal is not to invent a document language. The goal is to give existing Markdown corpora a minimal graph interpretation.
+PGM does not invent a document language. It gives an existing Markdown corpus a Property Graph interpretation.
 
-## Why Ordinary Hyperlinks?
+## Why Ordinary Inline Links?
 
-Markdown already has a native way to connect documents: links.
-
-Using ordinary hyperlinks means PGM works in existing Markdown tools without plugins, custom renderers, or preprocessing. A semantic annotation still looks like a readable sentence fragment in a note.
+Markdown already has a native construct that combines visible annotation text with an optional destination: the inline link.
 
 ```markdown
-[:partOf](project-apollo.md)
+[:Person {name: "Ada"}]()
+[:BORN_IN {year: 1815}](London.md)
 ```
 
-The link remains useful to humans even when no graph processor is present.
+Both are valid CommonMark and remain inspectable in existing editors, renderers, diffs, and search tools. A PGM processor parses the normal CommonMark link first and then interprets its text and destination.
 
-## Why No Direction Marker?
+## Why One Shared Syntax?
 
-Property Graph relationships are directed, but PGM 0.2.1 only allows outgoing relationships.
+Node labels, node properties, relationship types, and relationship properties belong to the same Property Graph model. Expressing them with one construct avoids separate metadata schemas and reserved annotation keywords.
 
-Once incoming relationships are excluded, a direction marker no longer carries information. The Markdown file is the source node. The link destination is the target node.
+The lexical form `:CLASS {properties}` is identical for nodes and relationships. Structure supplies the distinction: an empty destination annotates the current node; a non-empty destination creates an outgoing relationship.
 
-PGM 0.2.1 therefore does not define `->` or `<-`.
+## Why Does an Empty Destination Mean the Current Node?
 
-Allowing both incoming and outgoing relationship syntax would make two Markdown files potential authorities for the same graph edge. For example, `invoice.md` could define an outgoing `approvedBy` relationship to `peter.md`, while `peter.md` could define an incoming `approvedBy` relationship from `invoice.md` with different properties. That would require conflict-resolution rules, merge semantics, or precedence rules.
+The current Markdown file already identifies the current graph node. A second target identifier would add no information to a node annotation.
 
-PGM avoids that complexity. A relationship is authored once, in the source node document.
+An empty CommonMark destination therefore reads naturally as “apply here.” It also avoids custom headings, blocks, HTML attributes, and special label-reference files. CommonMark already normalizes both `()` and `(<>)` to an empty destination, so PGM does not need another parsing rule.
 
-## Why a Colon Annotation Marker?
+## Why No Reserved LABEL Keyword?
 
-PGM must distinguish semantic annotations from ordinary prose links.
+PGM 0.2.1 used `:LABEL` as a special marker and derived the actual label from the link destination.
 
-The 0.2.1 grammar uses an openCypher-style annotation marker: `[:type]`.
-
-The colon makes intent explicit without requiring uppercase naming conventions. Links such as `[Read more](invoice.md)` remain ordinary Markdown links, while `[:approvedBy](peter.md)` is visibly graph syntax.
-
-## Why Is LABEL Reserved?
-
-PGM 0.2.1 uses the same annotated-link syntax for labels and relationships.
+PGM 0.3.0 writes the label directly:
 
 ```markdown
-[:LABEL](Ontology/Person.md)
-[:bornIn {year: 1815}](London.md)
+[:Person]()
 ```
 
-The reserved annotation `:LABEL` adds `Person` to the label set of the current node. It does not create a Property Graph relationship.
+This removes a reserved word, destination-to-label conversion rules, and a special case that prohibited properties. `LABEL` is now an ordinary class name.
 
-This keeps the language small: there is one visible syntax for semantic references, and `LABEL` is the only core annotation with special non-relationship semantics.
+## Why No Graph Semantics in Front Matter?
 
-## Why YAML?
+Front Matter is widely used, but CommonMark does not define it. Different tools parse it differently and reserve different keys.
 
-YAML frontmatter is already common in Markdown systems such as static site generators, documentation tools, and note-taking applications.
-
-PGM uses YAML frontmatter for node properties because it is already the conventional place for document metadata.
-
-PGM 0.2.1 does not reserve the YAML key `labels`. If present, it is interpreted like any other node property.
-
-Node labels are declared with `[:LABEL](...)` links so labels can point to Markdown files that describe the ontology.
+PGM 0.3.0 keeps Front Matter available as ordinary document metadata while making the graph completely recoverable from classified CommonMark links. This gives node and relationship properties the same visible syntax and removes the previous split between block metadata and inline graph semantics.
 
 ## Why YAML Flow Mapping?
 
-Relationship properties need a compact but readable syntax inside a link label.
-
-YAML flow mappings already provide this:
+Properties need a readable syntax inside link text. YAML flow mappings already provide strings, numbers, booleans, null, and lists:
 
 ```markdown
-[:approvedBy {date: 2026-06-26}](peter-meier.md)
+[:Person {name: "Ada", born: 1815, interests: [math, music]}]()
 ```
 
-PGM delegates property-map syntax to YAML rather than defining a new mini-language.
+PGM delegates flow-mapping syntax to YAML instead of defining a property mini-language. YAML block mappings and Front Matter are not part of PGM graph extraction.
 
-## Why Are Semantic Wikilinks Optional?
+## Why Only Outgoing Relationships?
 
-Wikilinks are useful in tools such as Obsidian, Logseq, and Foam, but they are not CommonMark links.
+The Markdown file is the source node and a non-empty link destination is the target node. A separate arrow would repeat information already present in the structure.
 
-PGM therefore keeps CommonMark hyperlinks as the core syntax and treats semantic wikilinks as an optional processor extension.
+Allowing incoming declarations would make two files possible authorities for one edge and require conflict or merge rules. PGM therefore authors each relationship once, in its source document, and defines no `->` or `<-` markers.
 
-```markdown
-[[peter-meier | :approvedBy {date: 2026-06-26}]]
-```
+## Why a Natural Relationship Key?
 
-This gives Obsidian users a natural authoring form without making PGM depend on an editor-specific link model.
+PGM needs stable relationship semantics without adding an authored ID syntax. Source, type, target, and the canonical property map already contain the complete authored meaning of a relationship.
+
+PGM therefore uses `(source, type, target, canonical(properties))` as the natural key. Reordering links does not change that key. Equal annotations coalesce, while relationships with different properties remain distinct.
+
+A processor may hash this tuple for an internal fingerprint. That hash is not a PGM property and is not required in Markdown. Database-specific physical identity remains the graph database's responsibility.
+
+## Why Both CREATE and MERGE Exports?
+
+`CREATE` is the direct snapshot form and is appropriate when importing into an empty target. Its repeatability depends on clearing or replacing that target before each import; `CREATE` itself is not idempotent on a populated graph.
+
+`MERGE` can match the complete natural relationship key and is therefore idempotent for repeated execution of the same corpus export. It does not remove stale relationships after source changes, so full synchronization remains an integration concern.
+
+## Why Are Node Property Conflicts Errors?
+
+Multiple node annotations let labels and properties remain near relevant prose. This requires deterministic merge behavior.
+
+Equivalent declarations are harmless. Different values for the same key are ambiguous, so PGM reports a validation error instead of choosing the first or last declaration silently.
+
+## Why Is the File Path Canonical?
+
+The file is the unit Markdown tools already understand. It has a path, title, version history, and links. Using the canonical corpus path as node identity avoids embedded IDs and custom node delimiters.
+
+For relationships, the visible class expression defines the type and properties; the destination remains the machine-readable target reference.
+
+## Why Are Wikilinks Conversion-Only?
+
+Wikilinks are useful in Obsidian, Logseq, and Foam, but they are not CommonMark. PGM therefore keeps classified CommonMark links as the complete core syntax.
+
+Treating wikilinks as a second semantic input language would weaken interoperability and leave no natural empty-destination form for node annotations. Editor integrations may instead convert recognizable wikilinks to canonical CommonMark links before extraction. After conversion, every processor sees the same document and semantics.
 
 ## Why Property Graphs?
 
-Property Graphs model typed, directed relationships with properties on both nodes and relationships. This matches many real knowledge tasks:
+Property Graphs model labeled nodes and typed, directed relationships with properties on both. This matches documents approved by people, concepts explained by sources, tasks owned by teams, and records belonging to projects.
 
-- documents approved by people
-- issues caused by incidents
-- concepts explained by sources
-- tasks owned by teams
-- records belonging to projects
-
-Property Graphs are also practical for AI systems because they preserve local human-readable text while adding explicit relationship structure.
+The model is practical for AI systems because it preserves local human-readable text while adding explicit graph structure.
 
 ## Why openCypher?
 
-openCypher is a widely understood query model for Property Graphs. It gives PGM a concrete target without requiring a specific database vendor.
-
-PGM does not require Neo4j, Memgraph, RedisGraph, or any other implementation. It uses openCypher compatibility as the common semantic shape.
+openCypher is a widely understood query model for Property Graphs. It gives PGM a concrete semantic target without requiring a particular database vendor.
 
 ## Why Not RDF?
 
-RDF is powerful and important, but it is not the smallest fit for this proposal.
+RDF is powerful, but PGM is deliberately shaped around the Property Graph model used by openCypher. RDF export may be useful later; it is not the smallest core for this proposal.
 
-PGM is designed around the Property Graph model: nodes with labels and properties, and directed relationships with types and properties. That model maps naturally to openCypher and to how many users already think about graph databases.
+## Why Not HTML Extensions or Custom Blocks?
 
-RDF export may be useful later, but RDF is intentionally not the core information model for PGM 0.2.1.
+HTML attributes and custom blocks would add source noise, grammar, and renderer complexity. PGM keeps graph semantics where Markdown authors already express connections: inline links in prose, lists, and notes.
 
-## Why Not HTML Extensions?
-
-HTML extensions would remain valid Markdown, but they are harder to read, noisier in source form, and less pleasant in everyday notes.
-
-PGM favors syntax that a human can understand while reading raw Markdown.
-
-```markdown
-[:dependsOn](service-api.md)
-```
-
-This is clearer than an equivalent HTML attribute block for most authors.
-
-## Why Not Custom Markdown Blocks?
-
-Custom blocks would add grammar and tooling complexity.
-
-PGM wants relationships to live where authors already express connections: links in prose, lists, and notes. A custom block format would separate graph semantics from the human text and would make the extension feel like a framework.
-
-## Why One File Equals One Node?
-
-The file is the unit that Markdown tools already understand. It has a path, a title, metadata, version history, and links.
-
-Using one file as one node gives PGM an immediate canonical identity model without inventing node delimiters, embedded IDs, or custom blocks.
-
-## Why Is the Link Destination Canonical?
-
-The visible label of a PGM semantic link defines the semantic annotation.
-
-The destination is the stable machine-readable reference to the target node. PGM therefore treats the destination as canonical.
-
-## Why Keep 0.2.1 So Small?
+## Why Keep 0.3.0 So Small?
 
 PGM should feel like CommonMark, YAML, or OpenAPI: a specification first, not an application framework.
 
-Features such as namespaces, ontology validation, RDF export, embedded graph queries, and inference rules are useful ideas. They are excluded from 0.2.1 because the core must remain obvious, interoperable, and easy to implement.
+Namespaces, ontology validation, RDF export, embedded graph queries, and inference rules remain excluded until the unified core has proven stable and interoperable.

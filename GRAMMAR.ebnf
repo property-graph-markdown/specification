@@ -1,16 +1,9 @@
-(* Property Graph Markdown 0.2.1 semantic-link grammar. *)
+(* Property Graph Markdown 0.3.0 class-expression grammar. *)
 
-SemanticLink ::=
-    NodeLabelMarker
-  | RelationshipDescriptor ;
+ClassExpression ::=
+    ":" ClassName (Whitespace PropertyMap)? ;
 
-NodeLabelMarker ::=
-    ":LABEL" ;
-
-RelationshipDescriptor ::=
-    ":" RelationshipType PropertyMap? ;
-
-RelationshipType ::=
+ClassName ::=
     Identifier ;
 
 Identifier ::=
@@ -19,7 +12,9 @@ Identifier ::=
 PropertyMap ::=
     YAMLFlowMapping ;
 
+(* A PGM processor first parses an ordinary CommonMark inline link. *)
+(* This grammar applies only to the parsed link text. *)
+(* The parsed CommonMark destination selects the semantic role: *)
+(* empty means a node annotation; non-empty means a relationship. *)
 (* PropertyMap delegates to YAML 1.2 Flow Mapping. *)
-(* LABEL is the reserved marker for Node label semantics. *)
-(* LABEL must not be followed by PropertyMap. *)
-(* This grammar intentionally defines no Markdown block syntax. *)
+(* This grammar intentionally does not duplicate CommonMark link grammar. *)

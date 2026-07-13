@@ -1,14 +1,18 @@
 # PGM Reference Parser
 
-`pgmark.py` is the small Python reference parser for Property Graph Markdown 0.2.1.
+`pgmark.py` is the small Python reference parser for Property Graph Markdown 0.3.0.
 
-It performs four steps:
+It:
 
 1. Recursively scans Markdown files.
-2. Parses YAML frontmatter into node properties.
-3. Extracts CommonMark links whose visible label is a semantic annotation.
-4. Interprets `:LABEL` annotations as node labels.
-5. Emits openCypher-compatible statements.
+2. Excludes YAML Front Matter from graph extraction.
+3. Parses ordinary CommonMark inline links.
+4. Recognizes link text matching `:CLASS {properties}`.
+5. Applies empty-destination annotations to the current node.
+6. Creates outgoing relationships for non-empty destinations.
+7. Derives canonical semantic fingerprints and coalesces duplicates.
+8. Validates cumulative node properties.
+9. Emits openCypher-compatible statements.
 
 ## Install
 
@@ -16,13 +20,21 @@ It performs four steps:
 python -m pip install -r parser/requirements.txt
 ```
 
-`PyYAML` is recommended. If it is unavailable, the parser uses a small fallback parser for the core YAML subset used in the examples and tests.
+The parser uses `markdown-it-py` for CommonMark links and prefers PyYAML for flow mappings. A compact fallback covers the core flow-mapping subset when PyYAML is unavailable.
 
 ## Usage
 
 ```sh
 python parser/pgmark.py parse examples --cypher
 ```
+
+This emits a `CREATE` snapshot for an empty relationship target. For idempotent natural-key relationships:
+
+```sh
+python parser/pgmark.py parse examples --cypher --relationship-mode merge
+```
+
+Warnings describe malformed annotation attempts. Conflicting node properties are validation errors; the CLI exits with status 1 and does not emit Cypher for an invalid graph.
 
 ## Library Usage
 
@@ -35,8 +47,11 @@ from pgmark import graph_to_cypher, parse_corpus
 
 graph = parse_corpus("examples")
 print(graph_to_cypher(graph))
+print(graph_to_cypher(graph, relationship_mode="merge"))
 ```
+
+Each parsed `Node` contains its labels, properties, and outgoing relationships. Each `Relationship` has an internal SHA-256 fingerprint derived from source, type, target, and canonical properties. This fingerprint is not PGM syntax or an authored graph property. `Graph.relationships` provides a flattened view.
 
 ## Scope
 
-This parser is a reference implementation, not a full Markdown application framework. It is intentionally readable and small so the specification can be understood through code.
+This is a readable reference implementation, not a full Markdown framework. YAML Front Matter may remain in source documents, but the parser intentionally ignores it for graph semantics.

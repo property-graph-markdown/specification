@@ -1,10 +1,9 @@
 ---
-name: Peter Meier
-role: Finance Manager
+title: Peter Meier
 ---
 # Peter Meier
 
-[:LABEL](Ontology/Person.md)
+[:Person {name: "Peter Meier", role: "Finance Manager"}]()
 
 Peter Meier approves finance documents for active projects.
 
