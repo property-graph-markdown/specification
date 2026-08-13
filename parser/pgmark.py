@@ -79,14 +79,13 @@ def parse_corpus(path: str | Path) -> Graph:
     for file_path in files:
         node_id = file_path.relative_to(base).as_posix()
         text = file_path.read_text(encoding="utf-8")
-        _, body = split_frontmatter(text)
 
         node = graph.ensure_node(node_id)
         node.labels = []
         node.properties = {}
         node.relationships = []
 
-        for link in _extract_links_markdown_it(body):
+        for link in _extract_links_markdown_it(text):
             try:
                 class_name, properties = parse_class_expression(link.label)
             except ValueError as exc:
@@ -122,19 +121,6 @@ def parse_corpus(path: str | Path) -> Graph:
             )
 
     return graph
-
-
-def split_frontmatter(text: str) -> Tuple[str, str]:
-    lines = text.splitlines(keepends=True)
-    if not lines or lines[0].strip() != "---":
-        return "", text
-
-    for index in range(1, len(lines)):
-        if lines[index].strip() == "---":
-            return "".join(lines[1:index]), "".join(lines[index + 1 :])
-
-    return "", text
-
 
 def parse_class_expression(label: str) -> Tuple[str, Dict[str, Any]]:
     if "->" in label or "<-" in label:

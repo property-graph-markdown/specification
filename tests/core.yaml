@@ -57,15 +57,6 @@ cases:
       [[London | :BORN_IN {year: 1815}]]
     relationships: []
 
-  - name: frontmatter ignored
-    markdown: |
-      ---
-      labels: [Person]
-      properties: {born: 1815}
-      ---
-    labels: []
-    nodeProperties: {}
-
   - name: malformed annotation
     markdown: |
       [:approvedBy {date](target.md)

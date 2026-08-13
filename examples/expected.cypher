@@ -1,19 +1,39 @@
-MERGE (n0:Invoice:Document {id:"invoice.md"})
+MERGE (n0:Person:Mathematician {id:"ada-lovelace.md"})
 SET
-    n0.title = "Invoice 2026-001",
-    n0.status = "approved",
-    n0.amount = 1532,
-    n0.currency = "CHF"
-MERGE (n1:Person {id:"peter-meier.md"})
+    n0.name = "Ada Lovelace",
+    n0.born = 1815,
+    n0.died = 1852
+MERGE (n1:Place:City {id:"london.md"})
 SET
-    n1.name = "Peter Meier",
-    n1.role = "Finance Manager"
-MERGE (n2:Project {id:"project-apollo.md"})
+    n1.name = "London",
+    n1.country = "United Kingdom"
+MERGE (n2:Person:Mathematician:Inventor {id:"charles-babbage.md"})
 SET
-    n2.name = "Project Apollo",
-    n2.status = "active"
-CREATE (n0)-[:approvedBy {
-    date: date("2026-06-26")
+    n2.name = "Charles Babbage",
+    n2.born = 1791,
+    n2.died = 1871
+MERGE (n3:Person:Mathematician:Logician {id:"augustus-de-morgan.md"})
+SET
+    n3.name = "Augustus De Morgan",
+    n3.born = 1806,
+    n3.died = 1871
+MERGE (n4:Design:Computer {id:"analytical-engine.md"})
+SET
+    n4.name = "Analytical Engine",
+    n4.proposed = 1837
+CREATE (n0)-[:BORN_IN {
+    year: 1815
 }]->(n1)
-CREATE (n0)-[:partOf]->(n2)
-CREATE (n1)-[:memberOf]->(n2)
+CREATE (n0)-[:COLLABORATED_WITH {
+    from: 1833
+}]->(n2)
+CREATE (n0)-[:STUDIED_UNDER {
+    from: 1840
+}]->(n3)
+CREATE (n0)-[:CONTRIBUTED_TO {
+    role: "notes and algorithm",
+    year: 1843
+}]->(n4)
+CREATE (n2)-[:DESIGNED {
+    from: 1833
+}]->(n4)

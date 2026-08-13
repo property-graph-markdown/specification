@@ -1,0 +1,11 @@
+{
+  "name": "pgm-schema",
+  "version": "0.1.0",
+  "private": true,
+  "description": "M0 example data, M1 schema, and reflexively closed M2* meta-ontology for Property Graph Markdown",
+  "scripts": {
+    "test": "node validate.mjs",
+    "validate": "node validate.mjs",
+    "validate:m2-star": "node validate.mjs"
+  }
+}

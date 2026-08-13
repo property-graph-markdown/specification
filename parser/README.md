@@ -5,14 +5,13 @@
 It:
 
 1. Recursively scans Markdown files.
-2. Excludes YAML Front Matter from graph extraction.
-3. Parses ordinary CommonMark inline links.
-4. Recognizes link text matching `:CLASS {properties}`.
-5. Applies empty-destination annotations to the current node.
-6. Creates outgoing relationships for non-empty destinations.
-7. Derives canonical semantic fingerprints and coalesces duplicates.
-8. Validates cumulative node properties.
-9. Emits openCypher-compatible statements.
+2. Parses ordinary CommonMark inline links.
+3. Recognizes link text matching `:CLASS {properties}`.
+4. Applies empty-destination annotations to the current node.
+5. Creates outgoing relationships for non-empty destinations.
+6. Derives canonical semantic fingerprints and coalesces duplicates.
+7. Validates cumulative node properties.
+8. Emits openCypher-compatible statements.
 
 ## Install
 
@@ -54,4 +53,4 @@ Each parsed `Node` contains its labels, properties, and outgoing relationships. 
 
 ## Scope
 
-This is a readable reference implementation, not a full Markdown framework. YAML Front Matter may remain in source documents, but the parser intentionally ignores it for graph semantics.
+This is a readable reference implementation, not a full Markdown framework.

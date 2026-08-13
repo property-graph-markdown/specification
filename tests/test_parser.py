@@ -226,43 +226,6 @@ class ParserTests(unittest.TestCase):
         self.assertEqual(graph.relationships, [])
         self.assertEqual(graph.warnings, [])
 
-    def test_frontmatter_is_ignored(self):
-        graph = self.parse_files(
-            {
-                "ada.md": (
-                    "---\n"
-                    "labels:\n"
-                    "  - Person\n"
-                    "properties:\n"
-                    "  born: 1815\n"
-                    'annotation: "[:Hidden]()"\n'
-                    "---\n\n"
-                    "# Ada Lovelace\n"
-                )
-            }
-        )
-
-        node = graph.nodes["ada.md"]
-        self.assertEqual(node.labels, [])
-        self.assertEqual(node.properties, {})
-
-    def test_frontmatter_plus_annotation_uses_only_link_semantics(self):
-        graph = self.parse_files(
-            {
-                "ada.md": (
-                    "---\n"
-                    "title: Ada Lovelace\n"
-                    "tags: [history]\n"
-                    "---\n\n"
-                    "[:Person {born: 1815}]()\n"
-                )
-            }
-        )
-
-        node = graph.nodes["ada.md"]
-        self.assertEqual(node.labels, ["Person"])
-        self.assertEqual(node.properties, {"born": 1815})
-
     def test_class_name_is_required(self):
         graph = self.parse_files({"note.md": "[:]();\n"})
 
@@ -323,15 +286,6 @@ class ParserTests(unittest.TestCase):
 
         self.assertEqual(graph.nodes["a.md"].labels, [])
         self.assertEqual(graph.relationships[0].type, "LABEL")
-
-    def test_repository_meta_ontology_parses_without_diagnostics(self):
-        graph = parse_corpus(ROOT / "meta-ontology")
-
-        self.assertEqual(graph.warnings, [])
-        self.assertEqual(graph.errors, [])
-        self.assertEqual(graph.relationships, [])
-        for name in ["NodeLabel.md", "RelationshipType.md", "PropertyKey.md"]:
-            self.assertEqual(graph.nodes[name].labels, ["NodeLabel"])
 
     def test_examples_match_expected_cypher(self):
         graph = parse_corpus(ROOT / "examples")

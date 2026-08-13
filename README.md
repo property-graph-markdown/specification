@@ -30,19 +30,13 @@ An empty destination annotates the current document node. `Person` is a node lab
 
 A non-empty destination creates an outgoing relationship. `BORN_IN` is the relationship type and the flow mapping contains relationship properties.
 
-One Markdown file is one node. The file's canonical corpus path is its node identity. Ordinary links remain ordinary links. YAML Front Matter remains ordinary document metadata and has no PGM graph semantics.
+One Markdown file is one node. The file's canonical corpus path is its node identity. Ordinary links remain ordinary links.
 
 That is the complete core language.
 
 ## Example
 
 ```markdown
----
-title: Ada Lovelace
-tags:
-  - history
----
-
 # Ada Lovelace
 
 [:Person {name: "Ada Lovelace", born: 1815}]()
@@ -54,7 +48,7 @@ Worked with
 [:COLLABORATED_WITH {from: 1833}](Charles-Babbage.md).
 ```
 
-The Front Matter may be useful to an editor or static-site generator, but PGM ignores it. All graph semantics are carried by the four classified links.
+All graph semantics are carried by the four classified links.
 
 ## Generated Graph
 
@@ -115,7 +109,7 @@ MERGE (n)-[:BORN_IN {year: 1815}]->(london)
 MERGE (n)-[:COLLABORATED_WITH {from: 1833}]->(charles)
 ```
 
-PGM does not require a technical relationship ID in Markdown. The reference parser computes a deterministic semantic fingerprint internally, while physical relationship identity remains the graph database's responsibility. A database adapter may materialize that fingerprint as private metadata when its matching or constraint model requires it.
+PGM does not require a technical relationship ID in Markdown. The reference parser computes a deterministic semantic fingerprint internally, while physical relationship identity remains the graph database's responsibility. A database adapter may materialize that fingerprint as private adapter state when its matching or constraint model requires it.
 
 ## Validation
 
@@ -176,55 +170,38 @@ graph = parse_corpus("examples")
 print(graph_to_cypher(graph))
 ```
 
-## Migration from 0.2.1
-
-PGM 0.3.0 removes graph semantics from YAML Front Matter and removes the reserved `:LABEL` marker.
-
-Previous:
-
-```markdown
----
-name: Ada Lovelace
-born: 1815
----
-
-[:LABEL](Ontology/Person.md)
-[:LABEL](Ontology/Mathematician.md)
-```
-
-PGM 0.3.0:
-
-```markdown
-[:Person {name: "Ada Lovelace", born: 1815}]()
-[:Mathematician]()
-```
-
-Existing relationship annotations already use the shared typed-link form and normally require no change.
-
-Earlier prototypes that used Front Matter fields named `labels` or `properties` migrate to the same empty-destination form.
-
 ## Project Layout
 
 ```text
 SPEC.md              Normative 0.3.0 draft specification
 RATIONALE.md         Design rationale
 GRAMMAR.ebnf         Minimal class-expression grammar
-examples/            Small coherent Invoice-Person-Project graph
-meta-ontology/       Non-normative PGM meta-ontology written in PGM
+examples/            Small coherent Ada Lovelace knowledge graph
+pgm-schema/          Non-normative M0 → M1 → M2* model stack written in PGM
 parser/              Python reference parser
 tests/               Parser tests and core cases
-obsidian-plugin/     Minimal Obsidian editor integration
 ```
 
-The Obsidian plugin extracts graph semantics only from CommonMark links. Its wikilink command converts compatible Obsidian authoring syntax to canonical PGM CommonMark before extraction.
+The PGM Obsidian plugin is maintained separately as closed-source software and
+is not part of this public repository. It extracts graph semantics only from
+CommonMark links; its wikilink command converts compatible Obsidian authoring
+syntax to canonical PGM CommonMark before extraction.
 
-## Meta-Ontology
+## PGM Schema
 
-The non-normative `meta-ontology/` directory describes the three elements a PGM ontology can document: node labels, relationship types, and property keys. It defines no validation rules, allowed combinations, or built-in property keys. The meta-ontology is itself written in PGM 0.3.0.
+The non-normative [PGM Schema](pgm-schema/README.md) demonstrates concrete M0
+example data typed by a complete M1 domain schema, which is in turn typed by
+the canonical, reflexively closed M2* meta-ontology. M2* combines the former M2
+and M3 roles and closes its typing chain at `Node_Label`. Every
+information-graph node is a Markdown file. The retired predecessor design
+remains available only in the
+[archive](archive/pgm-schema-m2-m3/README.md). The example is intentionally
+kept outside the normative PGM 0.3.0 core and adds no syntax to this
+specification.
 
 ## Roadmap
 
-PGM 0.3.0 focuses on the unified classified-link core, the reference parser, and the Obsidian integration. Namespaces, ontology validation, RDF export, embedded graph queries, and inference rules remain intentionally outside the core.
+PGM 0.3.0 focuses on the unified classified-link core, the reference parser, and the Obsidian integration. Namespaces, RDF export, embedded graph queries, and inference rules remain intentionally outside the core.
 
 ## Guiding Principle
 

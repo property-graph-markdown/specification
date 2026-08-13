@@ -84,14 +84,6 @@ CommonMark parses both of the following as links with an empty destination:
 
 Processors SHALL normalize both forms to the same node annotation semantics. The first form is canonical for PGM serialization and examples.
 
-## YAML Front Matter
-
-PGM does not assign graph semantics to YAML Front Matter. Graph semantics are expressed exclusively using classified CommonMark links.
-
-A processor SHALL NOT derive node labels or node properties from Front Matter fields such as `labels`, `properties`, or any other metadata key. Front Matter MAY remain in a document for use by Markdown tools and document-management systems.
-
-The complete PGM graph semantics of a document SHALL be recoverable without parsing its Front Matter.
-
 ## Relationship Representation
 
 A classified link with a non-empty destination SHALL declare one outgoing relationship from the current document node to the node identified by the destination.
@@ -142,7 +134,7 @@ MERGE (source)-[:BORN_IN {year: 1815}]->(target)
 
 When the target adapter uses source and target nodes, relationship type, and the complete canonical property map as its match key, repeated execution of the same export is idempotent. Relationships with different property maps remain distinct.
 
-A database adapter MAY materialize the semantic fingerprint as technical database metadata when exact property-set matching or database constraints require it. Such metadata belongs to the adapter and is not PGM syntax or an authored relationship property.
+A database adapter MAY materialize the semantic fingerprint as private adapter state when exact property-set matching or database constraints require it. Such state is not PGM syntax or an authored relationship property.
 
 Natural-key `MERGE` does not remove relationships that disappeared from a later corpus version. Full synchronization and stale-relationship deletion are database integration concerns outside PGM core.
 
@@ -152,17 +144,16 @@ A conforming processor SHALL:
 
 1. Traverse a corpus of Markdown documents.
 2. Create one node for each Markdown document.
-3. Exclude YAML Front Matter from graph extraction without interpreting its fields.
-4. Parse the remaining document as CommonMark.
-5. Inspect successfully parsed inline links.
-6. Treat only links whose link text matches `ClassExpression` as classified links.
-7. Normalize `()` and `(<>)` as empty destinations.
-8. Apply empty-destination annotations to the current node.
-9. Resolve non-empty destinations to canonical node identifiers.
-10. Derive the semantic relationship key for each non-empty-destination annotation.
-11. Coalesce annotations with equivalent semantic relationship keys.
-12. Validate cumulative node property declarations.
-13. Emit, store, or expose an openCypher-compatible Property Graph.
+3. Parse each document as CommonMark.
+4. Inspect successfully parsed inline links.
+5. Treat only links whose link text matches `ClassExpression` as classified links.
+6. Normalize `()` and `(<>)` as empty destinations.
+7. Apply empty-destination annotations to the current node.
+8. Resolve non-empty destinations to canonical node identifiers.
+9. Derive the semantic relationship key for each non-empty-destination annotation.
+10. Coalesce annotations with equivalent semantic relationship keys.
+11. Validate cumulative node property declarations.
+12. Emit, store, or expose an openCypher-compatible Property Graph.
 
 A processor SHOULD report malformed link text beginning with `:` as a non-conforming annotation without rejecting unrelated document content.
 
@@ -174,48 +165,7 @@ PGM documents SHALL be valid CommonMark documents.
 
 PGM core defines no new block syntax, inline syntax, HTML extensions, fenced directives, or renderer behavior. A Markdown renderer that does not understand PGM SHALL render classified links as ordinary links.
 
-Front Matter compatibility is non-semantic: Front Matter may be preserved for other tools, but a PGM processor SHALL ignore it during graph extraction.
-
 Wikilinks are not PGM syntax and SHALL NOT produce graph semantics directly. An editor integration MAY convert a wikilink authoring form to a classified CommonMark link before PGM extraction.
-
-## Migration from 0.2.1
-
-PGM 0.2.1 used YAML Front Matter for node properties and the reserved `:LABEL` annotation for node labels. PGM 0.3.0 replaces both mechanisms with empty-destination classified links.
-
-Previous:
-
-```markdown
----
-name: Ada Lovelace
-born: 1815
----
-
-[:LABEL](Ontology/Person.md)
-[:LABEL](Ontology/Mathematician.md)
-```
-
-PGM 0.3.0:
-
-```markdown
-[:Person {name: "Ada Lovelace", born: 1815}]()
-[:Mathematician]()
-```
-
-Previous `:LABEL` annotations SHALL be rewritten using the destination-derived label as the empty-destination class name:
-
-```markdown
-[:LABEL](Ontology/Person.md)
-```
-
-becomes:
-
-```markdown
-[:Person]()
-```
-
-Existing relationship annotations of the form `[:TYPE {properties}](target.md)` require no syntax change.
-
-Some earlier prototypes used Front Matter fields named `labels` and `properties`. Those fields likewise have no PGM 0.3.0 graph semantics and SHALL be migrated to empty-destination classified links when they are intended to describe the graph.
 
 ## Conformance
 
