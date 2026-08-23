@@ -1,9 +1,10 @@
 #!/usr/bin/env python3
-"""Readable reference parser for Property Graph Markdown 0.3.0."""
+"""Readable reference parser for Property Graph Markdown 0.4.0."""
 
 from __future__ import annotations
 
 import argparse
+import base64
 import datetime as _datetime
 import hashlib
 import json
@@ -16,7 +17,7 @@ from pathlib import Path
 from typing import Any, Dict, Iterable, List, Optional, Tuple
 from urllib.parse import unquote, urlsplit
 
-try:  # Optional, but preferred when available.
+try:  # Required for OKF frontmatter and Relationship Properties.
     import yaml as _yaml  # type: ignore
 except Exception:  # pragma: no cover - exercised only when PyYAML is absent.
     _yaml = None
@@ -26,21 +27,23 @@ from markdown_it import MarkdownIt  # type: ignore
 
 IDENTIFIER_RE = re.compile(r"^[A-Za-z][A-Za-z0-9_]*$")
 DATE_RE = re.compile(r"^\d{4}-\d{2}-\d{2}$")
-CLASS_EXPRESSION_RE = re.compile(
-    r"^:(?P<class>[A-Za-z][A-Za-z0-9_]*)(?:[ \t]+(?P<props>\{.*\}))?$"
+FRONTMATTER_RE = re.compile(
+    r"\A---[ \t]*\r?\n(?P<yaml>.*?)(?:\r?\n)---[ \t]*(?:\r?\n|\Z)",
+    re.DOTALL,
 )
 
 
 @dataclass
 class Link:
-    label: str
+    text: str
     destination: str
+    title: Optional[str] = None
 
 
 @dataclass
 class Node:
     id: str
-    labels: List[str] = field(default_factory=list)
+    type: Optional[str] = None
     properties: Dict[str, Any] = field(default_factory=dict)
     relationships: List["Relationship"] = field(default_factory=list)
 
@@ -50,7 +53,9 @@ class Relationship:
     id: str
     source: str
     target: str
-    type: str
+    link_text: str
+    title: Optional[str] = None
+    type: Optional[str] = None
     properties: Dict[str, Any] = field(default_factory=dict)
 
 
@@ -77,34 +82,41 @@ def parse_corpus(path: str | Path) -> Graph:
     graph = Graph()
 
     for file_path in files:
-        node_id = file_path.relative_to(base).as_posix()
+        if _is_okf_reserved_file(file_path):
+            continue
+
+        document_id = file_path.relative_to(base).as_posix()
+        node_id = concept_id_from_document_id(document_id)
         text = file_path.read_text(encoding="utf-8")
 
         node = graph.ensure_node(node_id)
-        node.labels = []
+        node.type = None
         node.properties = {}
         node.relationships = []
 
-        for link in _extract_links_markdown_it(text):
-            try:
-                class_name, properties = parse_class_expression(link.label)
-            except ValueError as exc:
-                stripped = link.label.strip()
-                if "->" in stripped or "<-" in stripped or stripped.startswith(":"):
-                    graph.warnings.append(f"{node_id}: {exc}: {link.label!r}")
+        try:
+            node_type, node_properties, markdown_body = parse_okf_document(text)
+        except ValueError as exc:
+            graph.errors.append(f"{node_id}: {exc}")
+            continue
+
+        node.type = node_type
+        node.properties = node_properties
+
+        for link in _extract_links_markdown_it(markdown_body):
+            if not is_concept_destination(link.destination):
                 continue
 
-            if link.destination == "":
-                if class_name not in node.labels:
-                    node.labels.append(class_name)
-                _merge_node_properties(graph, node, properties)
-                continue
+            relationship_type, properties, diagnostic = parse_relationship_title(
+                link.title
+            )
+            if diagnostic:
+                graph.warnings.append(f"{node_id}: {diagnostic}: {link.title!r}")
 
             target_id = resolve_destination(link.destination, source_id=node_id)
             graph.ensure_node(target_id)
             relationship_id = _relationship_fingerprint(
                 source=node_id,
-                relationship_type=class_name,
                 target=target_id,
                 properties=properties,
             )
@@ -115,88 +127,111 @@ def parse_corpus(path: str | Path) -> Graph:
                     id=relationship_id,
                     source=node_id,
                     target=target_id,
-                    type=class_name,
+                    link_text=link.text,
+                    title=link.title,
+                    type=relationship_type,
                     properties=properties,
                 )
             )
 
     return graph
 
-def parse_class_expression(label: str) -> Tuple[str, Dict[str, Any]]:
-    if "->" in label or "<-" in label:
-        raise ValueError("direction markers are not supported in PGM 0.3.0")
 
-    match = CLASS_EXPRESSION_RE.match(label.strip())
+def parse_okf_document(markdown: str) -> Tuple[str, Dict[str, Any], str]:
+    """Return derived Node type, complete Properties, and Markdown body."""
+
+    match = FRONTMATTER_RE.match(markdown)
     if not match:
-        raise ValueError("malformed PGM class expression")
+        raise ValueError("missing leading OKF YAML frontmatter")
+    if _yaml is None:
+        raise ValueError("parsing OKF YAML frontmatter requires PyYAML")
 
-    class_name = match.group("class")
-    props_src = match.group("props")
-    properties = parse_yaml_flow_mapping(props_src) if props_src else {}
-    return class_name, properties
+    try:
+        loaded = _yaml.safe_load(match.group("yaml"))
+    except _yaml.YAMLError as exc:
+        raise ValueError("invalid OKF YAML frontmatter") from exc
+    if not isinstance(loaded, dict):
+        raise ValueError("OKF YAML frontmatter must be a mapping")
+
+    metadata = _normalize_yaml_value(dict(loaded))
+    _validate_property_map(metadata)
+    node_type = metadata.get("type")
+    if not isinstance(node_type, str) or not node_type.strip():
+        raise ValueError("OKF YAML frontmatter requires a non-empty string 'type'")
+
+    return node_type, metadata, markdown[match.end() :]
+
+
+def parse_relationship_title(
+    title: Optional[str],
+) -> Tuple[Optional[str], Dict[str, Any], Optional[str]]:
+    """Return derived type, complete Properties, and an optional diagnostic."""
+
+    if title is None or not title.lstrip().startswith("{"):
+        return None, {}, None
+
+    try:
+        properties = parse_yaml_flow_mapping(title)
+    except ValueError as exc:
+        return None, {}, f"invalid PGM YAML Flow Mapping title ({exc})"
+
+    relationship_type = properties.get("type")
+    if "type" in properties and (
+        not isinstance(relationship_type, str) or not relationship_type.strip()
+    ):
+        return (
+            None,
+            properties,
+            "Relationship Property 'type' is not a non-empty string; "
+            "Relationship remains untyped",
+        )
+    return relationship_type, properties, None
 
 
 def parse_yaml_flow_mapping(source: str) -> Dict[str, Any]:
     if not source or not source.strip().startswith("{"):
         raise ValueError("property map must be a YAML flow mapping")
+    if _yaml is None:
+        raise ValueError("parsing Relationship Properties requires PyYAML")
 
-    if _yaml is not None:
-        try:
-            data = _yaml.safe_load(source)
-        except _yaml.YAMLError as exc:
-            raise ValueError("invalid YAML flow mapping") from exc
-        if not isinstance(data, dict):
-            raise ValueError("property map must be a mapping")
-        properties = _normalize_yaml_value(dict(data))
-    else:
-        properties = _parse_flow_mapping_subset(source)
+    try:
+        data = _yaml.safe_load(source)
+    except _yaml.YAMLError as exc:
+        raise ValueError("invalid YAML flow mapping") from exc
+    if not isinstance(data, dict):
+        raise ValueError("property map must be a mapping")
+    properties = _normalize_yaml_value(dict(data))
 
     _validate_property_map(properties)
     return properties
 
 
-def _merge_node_properties(graph: Graph, node: Node, additions: Dict[str, Any]) -> None:
-    for key, value in additions.items():
-        if key not in node.properties:
-            node.properties[key] = value
-            continue
-        if _values_equivalent(node.properties[key], value):
-            continue
-        graph.errors.append(
-            f"{node.id}: conflicting node property {key!r}: "
-            f"{node.properties[key]!r} != {value!r}"
-        )
-
-
-def _values_equivalent(left: Any, right: Any) -> bool:
-    if isinstance(left, bool) or isinstance(right, bool):
-        return isinstance(left, bool) and isinstance(right, bool) and left == right
-    if isinstance(left, (int, float)) and isinstance(right, (int, float)):
-        return left == right
-    if isinstance(left, list) and isinstance(right, list):
-        return len(left) == len(right) and all(
-            _values_equivalent(a, b) for a, b in zip(left, right)
-        )
-    return type(left) is type(right) and left == right
-
-
 def _validate_property_map(properties: Dict[Any, Any]) -> None:
-    for key, value in properties.items():
+    for key in properties:
         if not isinstance(key, str):
             raise ValueError("property map keys must be strings")
-        _validate_property_value(value, key)
 
 
-def _validate_property_value(value: Any, key: str) -> None:
-    if isinstance(value, float) and not math.isfinite(value):
-        raise ValueError(f"property {key!r} must contain a finite number")
-    if value is None or isinstance(value, (str, bool, int, float)):
-        return
-    if isinstance(value, list):
-        for item in value:
-            _validate_property_value(item, key)
-        return
-    raise ValueError(f"property {key!r} has an unsupported value type")
+def concept_id_from_document_id(document_id: str) -> str:
+    """Convert an OKF concept document path to its Concept ID."""
+
+    if not document_id.lower().endswith(".md"):
+        raise ValueError(f"not a Markdown concept document: {document_id}")
+    return document_id[:-3]
+
+
+def is_concept_destination(destination: str) -> bool:
+    """Return whether a CommonMark destination denotes an OKF Concept path."""
+
+    raw = destination.strip()
+    if not raw:
+        return False
+    parsed = urlsplit(raw)
+    if parsed.scheme or parsed.netloc:
+        return False
+    if not parsed.path:
+        return bool(parsed.fragment)
+    return unquote(parsed.path).lower().endswith(".md")
 
 
 def resolve_destination(destination: str, source_id: str) -> str:
@@ -204,25 +239,32 @@ def resolve_destination(destination: str, source_id: str) -> str:
     parsed = urlsplit(raw)
 
     if parsed.scheme or parsed.netloc:
-        without_fragment = raw.split("#", 1)[0]
-        return unquote(without_fragment)
+        raise ValueError("external URI is not an OKF Concept destination")
 
-    without_fragment = raw.split("#", 1)[0]
-    decoded = unquote(without_fragment)
-    if not decoded and raw.startswith("#"):
+    decoded = unquote(parsed.path)
+    if not decoded and parsed.fragment:
         return source_id
-    source_dir = posixpath.dirname(source_id)
-    joined = posixpath.normpath(posixpath.join(source_dir, decoded))
-    return "" if joined == "." else joined
+
+    if decoded.startswith("/"):
+        document_id = posixpath.normpath(decoded.lstrip("/"))
+    else:
+        source_dir = posixpath.dirname(source_id)
+        document_id = posixpath.normpath(posixpath.join(source_dir, decoded))
+    if document_id in {"", "."}:
+        return source_id
+    return concept_id_from_document_id(document_id)
 
 
 def _relationship_fingerprint(
     source: str,
-    relationship_type: str,
     target: str,
     properties: Dict[str, Any],
 ) -> str:
-    natural_key = [source, relationship_type, target, _canonical_property_value(properties)]
+    natural_key = [
+        source,
+        target,
+        _canonical_property_value(properties),
+    ]
     canonical = json.dumps(
         natural_key,
         ensure_ascii=False,
@@ -236,9 +278,43 @@ def _relationship_fingerprint(
 
 def _canonical_property_value(value: Any) -> Any:
     if isinstance(value, dict):
-        return {key: _canonical_property_value(value[key]) for key in sorted(value)}
+        if all(isinstance(key, str) for key in value):
+            return {
+                key: _canonical_property_value(value[key]) for key in sorted(value)
+            }
+        entries = [
+            [_canonical_property_value(key), _canonical_property_value(item)]
+            for key, item in value.items()
+        ]
+        entries.sort(
+            key=lambda entry: json.dumps(
+                entry[0], ensure_ascii=False, sort_keys=True, separators=(",", ":")
+            )
+        )
+        return {"$yamlType": "mapping", "entries": entries}
     if isinstance(value, list):
         return [_canonical_property_value(item) for item in value]
+    if isinstance(value, tuple):
+        return [_canonical_property_value(item) for item in value]
+    if isinstance(value, (set, frozenset)):
+        items = [_canonical_property_value(item) for item in value]
+        items.sort(
+            key=lambda item: json.dumps(
+                item, ensure_ascii=False, sort_keys=True, separators=(",", ":")
+            )
+        )
+        return {"$yamlType": "set", "items": items}
+    if isinstance(value, bytes):
+        return {
+            "$yamlType": "binary",
+            "value": base64.b64encode(value).decode("ascii"),
+        }
+    if isinstance(value, _datetime.datetime):
+        return {"$yamlType": "timestamp", "value": value.isoformat()}
+    if isinstance(value, _datetime.date):
+        return {"$yamlType": "date", "value": value.isoformat()}
+    if isinstance(value, float) and not math.isfinite(value):
+        return {"$yamlType": "float", "value": repr(value)}
     if isinstance(value, float) and value.is_integer():
         return int(value)
     return value
@@ -249,6 +325,11 @@ def graph_to_cypher(graph: Graph, relationship_mode: str = "create") -> str:
         raise ValueError("cannot serialize a graph with validation errors")
     if relationship_mode not in {"create", "merge"}:
         raise ValueError("relationship mode must be 'create' or 'merge'")
+    if any(relationship.type is None for relationship in graph.relationships):
+        raise ValueError(
+            "Cypher export requires a type for every Relationship; "
+            "untyped Relationships remain valid PGM"
+        )
 
     aliases = {node_id: f"n{index}" for index, node_id in enumerate(graph.nodes.keys())}
     lines: List[str] = []
@@ -256,11 +337,14 @@ def graph_to_cypher(graph: Graph, relationship_mode: str = "create") -> str:
 
     for node_id, node in graph.nodes.items():
         alias = aliases[node_id]
-        labels = "".join(f":{_cypher_name(label)}" for label in node.labels)
+        labels = f":{_cypher_name(node.type)}" if node.type else ""
         lines.append(f'MERGE ({alias}{labels} {{id:{_cypher_value(node_id)}}})')
-        if node.properties:
+        data_properties = {
+            key: value for key, value in node.properties.items() if key != "type"
+        }
+        if data_properties:
             lines.append("SET")
-            items = list(node.properties.items())
+            items = list(data_properties.items())
             for index, (key, value) in enumerate(items):
                 comma = "," if index < len(items) - 1 else ""
                 lines.append(f"    {alias}.{_cypher_name(key)} = {_cypher_value(value)}{comma}")
@@ -268,13 +352,17 @@ def graph_to_cypher(graph: Graph, relationship_mode: str = "create") -> str:
     for rel in graph.relationships:
         source = aliases[rel.source]
         target = aliases[rel.target]
+        assert rel.type is not None
         rel_type = _cypher_name(rel.type)
-        if not rel.properties:
+        data_properties = {
+            key: value for key, value in rel.properties.items() if key != "type"
+        }
+        if not data_properties:
             lines.append(f"{relationship_keyword} ({source})-[:{rel_type}]->({target})")
             continue
 
         lines.append(f"{relationship_keyword} ({source})-[:{rel_type} {{")
-        items = sorted(rel.properties.items())
+        items = sorted(data_properties.items())
         for index, (key, value) in enumerate(items):
             comma = "," if index < len(items) - 1 else ""
             lines.append(f"    {_cypher_name(key)}: {_cypher_value(value)}{comma}")
@@ -291,13 +379,17 @@ def _markdown_files(root: Path) -> Iterable[Path]:
     return sorted(root.rglob("*.md"))
 
 
+def _is_okf_reserved_file(path: Path) -> bool:
+    return path.name in {"index.md", "log.md"}
+
+
 def _normalize_yaml_value(value: Any) -> Any:
     if isinstance(value, dict):
         return {key: _normalize_yaml_value(item) for key, item in value.items()}
     if isinstance(value, list):
         return [_normalize_yaml_value(item) for item in value]
-    if isinstance(value, _datetime.date) and not isinstance(value, _datetime.datetime):
-        return value.isoformat()
+    if isinstance(value, set):
+        return {_normalize_yaml_value(item) for item in value}
     return value
 
 
@@ -319,14 +411,17 @@ def _extract_links_markdown_it(markdown: str) -> List[Link]:
                 continue
 
             destination = ""
+            title: Optional[str] = None
             attrs = child.attrs or {}
             if isinstance(attrs, dict):
                 destination = attrs.get("href", "")
+                title = attrs.get("title")
             else:
                 for name, value in attrs:
                     if name == "href":
                         destination = value
-                        break
+                    elif name == "title":
+                        title = value
 
             label_parts: List[str] = []
             index += 1
@@ -336,92 +431,16 @@ def _extract_links_markdown_it(markdown: str) -> List[Link]:
                     label_parts.append(content)
                 index += 1
 
-            links.append(Link(label="".join(label_parts), destination=destination))
+            links.append(
+                Link(
+                    text="".join(label_parts),
+                    destination=destination,
+                    title=title,
+                )
+            )
             index += 1
 
     return links
-
-
-def _parse_flow_mapping_subset(source: str) -> Dict[str, Any]:
-    text = source.strip()
-    if not (text.startswith("{") and text.endswith("}")):
-        raise ValueError("property map must use { }")
-    inner = text[1:-1].strip()
-    if not inner:
-        return {}
-
-    result: Dict[str, Any] = {}
-    for item in _split_top_level(inner, ","):
-        key, value = _split_mapping_item(item)
-        result[_strip_quotes(key.strip())] = _parse_scalar_or_collection(value.strip())
-    return result
-
-
-def _parse_scalar_or_collection(value: str) -> Any:
-    if value.startswith("[") and value.endswith("]"):
-        inner = value[1:-1].strip()
-        return [] if not inner else [
-            _parse_scalar_or_collection(part.strip())
-            for part in _split_top_level(inner, ",")
-        ]
-    if value.startswith("{") and value.endswith("}"):
-        return _parse_flow_mapping_subset(value)
-    lowered = value.lower()
-    if lowered in {"true", "false"}:
-        return lowered == "true"
-    if lowered in {"null", "~"}:
-        return None
-    if re.fullmatch(r"-?\d+", value):
-        return int(value)
-    if re.fullmatch(r"-?\d+\.\d+", value):
-        return float(value)
-    return _strip_quotes(value)
-
-
-def _split_mapping_item(item: str) -> Tuple[str, str]:
-    quote: Optional[str] = None
-    depth = 0
-    for index, char in enumerate(item):
-        if quote:
-            if char == quote and item[index - 1 : index] != "\\":
-                quote = None
-        elif char in {"'", '"'}:
-            quote = char
-        elif char in "[{(":
-            depth += 1
-        elif char in "]})":
-            depth -= 1
-        elif char == ":" and depth == 0:
-            return item[:index], item[index + 1 :]
-    raise ValueError(f"invalid mapping item: {item!r}")
-
-
-def _split_top_level(text: str, delimiter: str) -> List[str]:
-    parts: List[str] = []
-    start = 0
-    quote: Optional[str] = None
-    depth = 0
-    for index, char in enumerate(text):
-        if quote:
-            if char == quote and text[index - 1 : index] != "\\":
-                quote = None
-        elif char in {"'", '"'}:
-            quote = char
-        elif char in "[{(":
-            depth += 1
-        elif char in "]})":
-            depth -= 1
-        elif char == delimiter and depth == 0:
-            parts.append(text[start:index].strip())
-            start = index + 1
-    parts.append(text[start:].strip())
-    return parts
-
-
-def _strip_quotes(value: str) -> str:
-    if len(value) >= 2 and value[0] == value[-1] and value[0] in {"'", '"'}:
-        return value[1:-1]
-    return value
 
 
 def _cypher_name(name: str) -> str:
@@ -438,10 +457,27 @@ def _cypher_value(value: Any) -> str:
     if isinstance(value, int) and not isinstance(value, bool):
         return str(value)
     if isinstance(value, float):
+        if not math.isfinite(value):
+            raise ValueError("Cypher export cannot represent non-finite YAML floats")
         return repr(value)
     if isinstance(value, list):
         return "[" + ", ".join(_cypher_value(item) for item in value) + "]"
-    if isinstance(value, _datetime.date) and not isinstance(value, _datetime.datetime):
+    if isinstance(value, (set, frozenset, bytes)):
+        raise ValueError(
+            f"Cypher export cannot represent YAML value of type {type(value).__name__}"
+        )
+    if isinstance(value, dict):
+        if not all(isinstance(key, str) for key in value):
+            raise ValueError(
+                "Cypher export cannot represent YAML mappings with non-string keys"
+            )
+        return "{" + ", ".join(
+            f"{_cypher_name(str(key))}: {_cypher_value(item)}"
+            for key, item in value.items()
+        ) + "}"
+    if isinstance(value, _datetime.datetime):
+        return f'datetime("{value.isoformat()}")'
+    if isinstance(value, _datetime.date):
         return f'date("{value.isoformat()}")'
     if isinstance(value, str) and DATE_RE.match(value):
         return f'date("{value}")'
@@ -473,7 +509,14 @@ def main(argv: Optional[List[str]] = None) -> int:
         if graph.errors:
             return 1
         if args.cypher:
-            print(graph_to_cypher(graph, relationship_mode=args.relationship_mode))
+            try:
+                cypher = graph_to_cypher(
+                    graph, relationship_mode=args.relationship_mode
+                )
+            except ValueError as exc:
+                print(f"error: {exc}", file=sys.stderr)
+                return 1
+            print(cypher)
         else:
             print(f"{len(graph.nodes)} nodes, {len(graph.relationships)} relationships")
         return 0

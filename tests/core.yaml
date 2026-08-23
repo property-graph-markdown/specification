@@ -1,63 +1,96 @@
 cases:
-  - name: node label
+  - name: OKF Concept becomes Node with complete Properties
     markdown: |
-      [:Person]()
-    labels: [Person]
-    nodeProperties: {}
-    relationships: []
+      ---
+      type: Person
+      name: Alice
+      age: 42
+      ---
+    conceptId: people/Alice
+    graphElementType: Person
+    nodeProperties: {type: Person, name: Alice, age: 42}
 
-  - name: node label and properties
+  - name: bare Concept Link is baseline Relationship
     markdown: |
-      [:Person {name: "Ada", born: 1815}]()
-    labels: [Person]
-    nodeProperties: {name: Ada, born: 1815}
+      [Acme](Acme.md)
+    relationship:
+      type: null
+      properties: {}
 
-  - name: multiple node annotations
+  - name: untyped Relationship with Properties
     markdown: |
-      [:Person {name: "Ada"}]()
-      [:Mathematician {born: 1815}]()
-    labels: [Person, Mathematician]
-    nodeProperties: {name: Ada, born: 1815}
+      [Acme](Acme.md "{since: 2024}")
+    relationship:
+      type: null
+      properties: {since: 2024}
 
-  - name: outgoing relationship
+  - name: typed Relationship retains type Property
     markdown: |
-      [:knows](bob.md)
-    relationships:
-      - source: alice.md
-        type: knows
-        target: bob.md
+      [Acme](Acme.md "{type: works_for}")
+    relationship:
+      type: works_for
+      properties: {type: works_for}
 
-  - name: relationship properties
+  - name: typed Relationship with Properties
     markdown: |
-      [:approvedBy {date: 2026-06-26, confidence: 0.98}](peter.md)
+      [Acme](Acme.md "{type: works_for, since: 2024}")
+    relationship:
+      type: works_for
+      properties: {type: works_for, since: 2024}
+
+  - name: ordinary Markdown title preserves baseline Relationship
+    markdown: |
+      [Acme](Acme.md "Acme Corporation")
+    relationship:
+      type: null
+      properties: {}
+      title: Acme Corporation
+
+  - name: empty YAML Flow Map equals bare Relationship
+    markdown: |
+      [Acme](Acme.md "{}")
+    relationship:
+      type: null
+      properties: {}
+
+  - name: YAML scalar sequence and mapping values
+    markdown: |
+      [Acme](Acme.md "{type: works_for, text: hello, count: 2, ratio: 0.5, active: true, roles: [architect, developer], context: {team: graph}}")
     relationshipProperties:
-      date: 2026-06-26
-      confidence: 0.98
+      type: works_for
+      text: hello
+      count: 2
+      ratio: 0.5
+      active: true
+      roles: [architect, developer]
+      context: {team: graph}
 
-  - name: exact duplicate relationship
+  - name: invalid YAML Flow Map candidate is nonfatal
     markdown: |
-      [:visited {year: 1830}](London.md)
-      [:visited {year: 1830}](London.md)
-    relationshipCount: 1
-
-  - name: same endpoints with different properties
-    markdown: |
-      [:visited {year: 1830}](London.md)
-      [:visited {year: 1831}](London.md)
-    relationshipCount: 2
-
-  - name: ordinary empty link
-    markdown: |
-      [coming soon]()
-    labels: []
-    relationships: []
-
-  - name: wikilink compatibility is non-semantic
-    markdown: |
-      [[London | :BORN_IN {year: 1815}]]
-    relationships: []
-
-  - name: malformed annotation
-    markdown: |
-      [:approvedBy {date](target.md)
+      [Acme](Acme.md "{type:")
+    relationship:
+      type: null
+      properties: {}
     warnings: true
+
+  - name: relative OKF Concept Link
+    source: people/Alice
+    markdown: |
+      [Acme](../organizations/Acme.md)
+    target: organizations/Acme
+
+  - name: absolute OKF Concept Link
+    source: people/Alice
+    markdown: |
+      [Acme](/organizations/Acme.md)
+    target: organizations/Acme
+
+  - name: external Link is not a Concept Link
+    markdown: |
+      [website](https://example.com)
+    relationships: []
+
+  - name: wikilink is outside the reference Markdown profile
+    markdown: |
+      [[Acme]]
+    relationships: []

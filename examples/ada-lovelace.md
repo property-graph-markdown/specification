@@ -1,16 +1,18 @@
+---
+type: Person
+name: Ada Lovelace
+born: 1815
+died: 1852
+occupation: Mathematician
+---
+
 # Ada Lovelace
 
-[:Person {name: "Ada Lovelace", born: 1815, died: 1852}]()
+Born in [London](london.md "{type: born_in, year: 1815}").
 
-[:Mathematician]()
+Collaborated with [Charles Babbage](charles-babbage.md "{type: collaborated_with, from: 1833}").
 
-Born in [:BORN_IN {year: 1815}](london.md).
-
-Collaborated with [:COLLABORATED_WITH {from: 1833}](charles-babbage.md).
-
-Studied under [:STUDIED_UNDER {from: 1840}](augustus-de-morgan.md).
+Studied under [Augustus De Morgan](augustus-de-morgan.md "{type: studied_under, from: 1840}").
 
 Contributed extensive notes and an algorithm to
-[:CONTRIBUTED_TO {year: 1843, role: "notes and algorithm"}](analytical-engine.md).
-
-[](analytical-engine.md)
+[the Analytical Engine](analytical-engine.md "{type: contributed_to, year: 1843, role: 'notes and algorithm'}").

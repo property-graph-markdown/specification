@@ -2,13 +2,14 @@
 
 Thank you for helping shape Property Graph Markdown.
 
-PGM is intended to become an open, vendor-neutral specification for interpreting CommonMark corpora as openCypher-compatible Property Graphs.
+PGM is intended to become an open, vendor-neutral semantic profile for
+interpreting OKF Knowledge Bundles as Property Graphs.
 
 ## Good Contributions
 
 We welcome:
 
-- grammar feedback
+- semantic-mapping feedback
 - parser improvements
 - relationship examples
 - interoperability reports
@@ -22,9 +23,10 @@ PGM should remain small.
 When proposing a change, please explain:
 
 - what problem it solves;
-- why existing CommonMark, YAML, and openCypher concepts are not enough;
+- why existing OKF, Markdown, and YAML concepts are not enough;
 - how it affects human readability;
-- how it affects existing Markdown tooling;
+- how it affects existing Markdown tooling and the CommonMark reference
+  profile;
 - whether it belongs in the core specification or an extension.
 
 ## Specification Changes
@@ -33,7 +35,7 @@ Specification changes should update:
 
 - `SPEC.md`
 - `RATIONALE.md`
-- `GRAMMAR.ebnf`, if grammar changes are involved
+- `GRAMMAR.ebnf`, only to preserve the explicit no-independent-grammar notice
 - examples and tests, when behavior changes
 
 ## Parser Changes
@@ -52,4 +54,4 @@ PGM should not depend on one editor, graph database, AI system, or vendor.
 
 The guiding principle is:
 
-> Introduce the smallest possible extension to CommonMark that enables Markdown corpora to be interpreted as openCypher-compatible Property Graphs.
+> PGM adds graph semantics, not syntax.

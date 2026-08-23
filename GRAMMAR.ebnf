@@ -1,20 +1,11 @@
-(* Property Graph Markdown 0.3.0 class-expression grammar. *)
-
-ClassExpression ::=
-    ":" ClassName (Whitespace PropertyMap)? ;
-
-ClassName ::=
-    Identifier ;
-
-Identifier ::=
-    Letter (Letter | Digit | "_")* ;
-
-PropertyMap ::=
-    YAMLFlowMapping ;
-
-(* A PGM processor first parses an ordinary CommonMark inline link. *)
-(* This grammar applies only to the parsed link text. *)
-(* The parsed CommonMark destination selects the semantic role: *)
-(* empty means a node annotation; non-empty means a relationship. *)
-(* PropertyMap delegates to YAML 1.2 Flow Mapping. *)
-(* This grammar intentionally does not duplicate CommonMark link grammar. *)
+(* Property Graph Markdown 0.4.0 defines no independent grammar.              *)
+(*                                                                             *)
+(* Parse concept documents as OKF, document structure and links as Markdown,   *)
+(* and frontmatter plus complete YAML Flow Mapping link titles as YAML. Every  *)
+(* OKF Concept Link has baseline PGM Relationship semantics; a valid Mapping   *)
+(* title supplies optional Properties and a derived Graph Element Type. Apply  *)
+(* the semantic mapping rules in SPEC.md after those base-format parses.       *)
+(*                                                                             *)
+(* CommonMark 0.31.2 is the reference grammar for canonical Link syntax. PGM   *)
+(* defines no RelationshipExpression, type token, arrow, incoming marker, or   *)
+(* PropertyMap production.                                                     *)

@@ -4,9 +4,11 @@ PGM is currently in **Phase 1**. Phases 2 and 3 describe possible future directi
 
 ## Semantic Minimalism
 
-PGM introduces semantic constructs only when they provide measurable practical value for humans, agents, or interoperability.
+PGM introduces graph semantics only when they provide measurable practical
+value for humans, agents, or interoperability. It does not introduce Markdown
+syntax where OKF, Markdown, or YAML already provides the required structure.
 
-Future capabilities will be evaluated independently. Their appearance in this roadmap does not reserve syntax, imply implementation, or make them part of PGM 0.3.0.
+Future capabilities will be evaluated independently. Their appearance in this roadmap does not reserve syntax, imply implementation, or make them part of PGM 0.4.0.
 
 ## Phase 1: PGM
 
@@ -19,19 +21,22 @@ PGM describes the data. Its role is analogous to JSON: it provides a concrete re
 Phase 1 combines:
 
 - Property Graphs
-- CommonMark
+- Markdown, with CommonMark as the canonical reference profile
 - Obsidian and other Markdown tools
 - agent memory
 - Git-based collaboration
 - token-efficient context
 
-PGM 0.3.0 belongs to Phase 1 and defines the smallest useful core:
+PGM 0.4.0 belongs to Phase 1 and defines the smallest useful core:
 
 - the core specification
 - the reference parser
 - the Obsidian plugin
 
-The Phase 1 goal is interoperability around one classified CommonMark link construct, not feature breadth.
+The Phase 1 goal is interoperability around a monotonic property-graph
+interpretation of OKF Concepts and all OKF Concept Links. Optional YAML Flow
+Mapping titles enrich Relationships with Properties and Types; they do not
+control Relationship existence.
 
 ## Phase 2: PGM Information Graph
 
@@ -39,25 +44,30 @@ The Phase 1 goal is interoperability around one classified CommonMark link const
 
 **Question:** How can people and agents represent knowledge structures and graph schemas in PGM?
 
-The PGM Information Graph would describe the structure of PGM data. Its role would be analogous to JSON Schema.
+The PGM Information Graph describes the structure of PGM data. Its role is
+analogous to JSON Schema.
 
-Candidate capabilities include:
+The prototype profile provides:
 
-- node label and node type definitions
-- relationship type definitions
-- property definitions
-- property types and data types
-- constraints
+- Type names derived from OKF Concept IDs
+- permitted node attributes prototyped in frontmatter
+- permitted PGM relationships prototyped as Concept Links, with optional YAML
+  annotations
+- implicit Source and Target Types from the prototype link endpoints
+- permitted relationship properties prototyped in YAML Flow Mapping titles
 
-Phase 2 is out of scope for PGM 0.3.0. This roadmap defines neither its representation nor its validation language.
+Phase 2 remains outside the PGM 0.4.0 core. Its first independent profile is
+[PGM Schema](pgm-schema/SPEC.md), which defines the representation and
+validation language for these structural capabilities without adding PGM
+syntax.
 
-The repository's non-normative [`pgm-schema/`](pgm-schema/README.md) directory
-is an exploratory example for this phase. It demonstrates a complete M1
-domain schema typed by the reflexively closed M2* meta-ontology and a concrete
-M0 graph typed by M1, without reserving that vocabulary or promoting it into
-PGM 0.3.0. The superseded
-three-level M2/M3 design is retained only in the
-[archive](archive/pgm-schema-m2-m3/README.md).
+The repository's [`pgm-schema/`](pgm-schema/README.md) directory contains the
+formal Public Draft, a schema Knowledge Bundle of `Prototype` concepts, a
+conforming instance bundle, and executable conformance tests. Datatypes,
+required properties, cardinalities, inheritance, uniqueness, and inference
+remain outside the current PGM Schema draft. Superseded M2/M3 artifacts are not
+part of the active tree; earlier versions remain recoverable through Git
+history.
 
 ## Phase 3: PGM Ontology Graph
 
@@ -116,11 +126,11 @@ Mark relationships whose meaning is transitive:
 PART_OF rdf:type owl:TransitiveProperty
 ```
 
-Phase 3 is out of scope for PGM 0.3.0. Each candidate would require evidence of practical value before standardization.
+Phase 3 is out of scope for PGM 0.4.0. Each candidate would require evidence of practical value before standardization.
 
 ## Phase 1 Non-Goals
 
-PGM 0.3.0 does not define:
+PGM 0.4.0 does not define:
 
 - a Markdown replacement
 - a graph database
@@ -131,4 +141,6 @@ PGM 0.3.0 does not define:
 - an ontology graph
 - Linked Data semantics
 
-PGM 0.3.0 only defines how classified CommonMark inline links make a CommonMark corpus interpretable as an openCypher-compatible Property Graph.
+PGM 0.4.0 only defines how OKF Concepts become Nodes, all OKF Concept Links
+become Relationships, and optional YAML annotations supply Relationship
+Properties and Graph Element Types.

@@ -1,56 +1,47 @@
 # PGM Reference Parser
 
-`pgmark.py` is the small Python reference parser for Property Graph Markdown 0.3.0.
+`pgmark.py` is the readable reference processor for Property Graph Markdown
+0.4.0. It composes existing processors instead of implementing a PGM grammar:
 
-It:
+1. read OKF Concept documents and Concept IDs;
+2. retain complete frontmatter as Node Properties and derive the Node Type
+   from its retained `type` Property;
+3. parse each body with the CommonMark reference profile;
+4. turn every OKF Concept Link into a directed Relationship; and
+5. when a complete title is a YAML Flow Mapping, retain the complete Mapping
+   as Relationship Properties and derive an optional Relationship Type from
+   its retained `type` Property.
 
-1. Recursively scans Markdown files.
-2. Parses ordinary CommonMark inline links.
-3. Recognizes link text matching `:CLASS {properties}`.
-4. Applies empty-destination annotations to the current node.
-5. Creates outgoing relationships for non-empty destinations.
-6. Derives canonical semantic fingerprints and coalesces duplicates.
-7. Validates cumulative node properties.
-8. Emits openCypher-compatible statements.
+```markdown
+[Acme](Acme.md)
+[Acme](Acme.md "Acme Corporation")
+[Acme](Acme.md "{since: 2024}")
+[Acme](Acme.md "{type: works_for, since: 2024}")
+```
 
-## Install
+All four links are Relationships. The first two are untyped and have no
+Properties, the third is untyped with `since`, and the fourth is typed with the
+complete Properties `type` and `since`.
+
+The `Relationship` model retains `source`, `target`, `link_text`, `title`, an
+optional derived `type`, and the complete Property map. Link text and an
+ordinary title are source metadata, not graph labels or Properties. Invalid
+brace-leading YAML enrichment produces a warning while retaining the baseline
+Relationship.
+
+Install and run:
 
 ```sh
 python -m pip install -r parser/requirements.txt
-```
-
-The parser uses `markdown-it-py` for CommonMark links and prefers PyYAML for flow mappings. A compact fallback covers the core flow-mapping subset when PyYAML is unavailable.
-
-## Usage
-
-```sh
+python parser/pgmark.py parse examples
 python parser/pgmark.py parse examples --cypher
+python -m unittest discover -s tests
 ```
 
-This emits a `CREATE` snapshot for an empty relationship target. For idempotent natural-key relationships:
+The non-normative Cypher adapter projects `type` to a node label or
+relationship type and omits the redundant stored `type` Property in Cypher. It
+reports a target-specific error for untyped Relationships or YAML values that
+Cypher cannot represent; those limitations do not make the source invalid PGM.
 
-```sh
-python parser/pgmark.py parse examples --cypher --relationship-mode merge
-```
-
-Warnings describe malformed annotation attempts. Conflicting node properties are validation errors; the CLI exits with status 1 and does not emit Cypher for an invalid graph.
-
-## Library Usage
-
-```python
-from pathlib import Path
-import sys
-
-sys.path.insert(0, str(Path("parser")))
-from pgmark import graph_to_cypher, parse_corpus
-
-graph = parse_corpus("examples")
-print(graph_to_cypher(graph))
-print(graph_to_cypher(graph, relationship_mode="merge"))
-```
-
-Each parsed `Node` contains its labels, properties, and outgoing relationships. Each `Relationship` has an internal SHA-256 fingerprint derived from source, type, target, and canonical properties. This fingerprint is not PGM syntax or an authored graph property. `Graph.relationships` provides a flattened view.
-
-## Scope
-
-This is a readable reference implementation, not a full Markdown framework.
+Use `--relationship-mode merge` for idempotent Relationship export by the
+complete semantic key instead of snapshot `CREATE` statements.

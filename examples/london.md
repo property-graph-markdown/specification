@@ -1,5 +1,8 @@
+---
+type: Place
+name: London
+country: United Kingdom
+category: City
+---
+
 # London
-
-[:Place {name: "London", country: "United Kingdom"}]()
-
-[:City]()

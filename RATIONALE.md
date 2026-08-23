@@ -1,167 +1,164 @@
-# Rationale
+# PGM 0.4 Rationale
 
-PGM is intentionally small. This document explains the design decisions behind the 0.3.0 draft.
+## A semantic profile, not a Markdown extension
 
-## What Kind of Language Is PGM?
+PGM's design center is:
 
-PGM is a knowledge-graph representation language for Markdown files. It provides a standard textual representation of a Property Graph while preserving the document as readable Markdown.
+> PGM adds graph semantics, not syntax.
 
-## Why CommonMark?
+OKF already defines a portable collection of Concepts as Markdown documents
+with YAML frontmatter. Markdown already defines directed links, link text,
+destinations, and optional titles. YAML already defines readable structured
+values. PGM only specifies how those constructs map to a Property Graph.
 
-CommonMark is the most precise widely adopted definition of Markdown. It is portable, readable, and already supported by editors, renderers, static site generators, documentation systems, and AI tooling.
+CommonMark 0.31.2 is the reference grammar for canonical PGM Link examples,
+not the conceptual boundary of the model. Another Markdown profile is usable
+when it exposes equivalent parsed Link text, destination, and title fields.
 
-PGM does not invent a document language. It gives an existing Markdown corpus a Property Graph interpretation.
+## Why the interpretation is monotonic over OKF
 
-## Why Property Graphs?
+OKF says a Concept Link from Concept A to Concept B asserts a relationship and
+describes its graph view as directed and untyped. Interoperability therefore
+requires PGM to preserve that baseline: every OKF Concept becomes a Node and
+every OKF Concept Link becomes a Relationship.
 
-Property Graphs model labeled nodes and typed, directed relationships with properties on both. This matches, for example, documents approved by people, concepts explained by sources, tasks owned by teams, and records belonging to projects.
+Making Relationships depend on a YAML title would invert progressive
+enhancement. The same OKF bundle would lose relationships when read as PGM,
+and adding optional metadata would unexpectedly determine whether an edge
+exists. Under the monotonic rule, enrichment can add a Type or Properties but
+cannot delete the underlying OKF Relationship.
 
-The model is practical for AI systems because
-1. It allows to provide a structured knowledge graph as source of truth
-2. Humans can visualize knowledge graphs quite naturally and thus understand complex topic structures more easiligy
-3. Knowledge grapbs can be provisioned for AI Agents as a structured source of truth for improved data quality
+This also handles navigational links consistently. If a link targets a Concept
+under OKF path rules, it is part of OKF's graph. Authors who need a purely
+external or non-conceptual navigation target can use a destination that is not
+an OKF Concept ID.
 
-## Why Keep Property Graph Semantics in a Markdown Document?
+## Why Concepts become Nodes
 
-For AI agents, storage is often not the limiting resource; the context window is. Every sidecar representation loaded alongside a document consumes additional tokens. At corpus scale, an agent may already need to read the Markdown prose, so requiring a separate RDF document or NeoçJ database or knowledge graphs would duplicate part of the same knowledge in its context.
+An OKF Concept already has stable identity: its Concept ID. Its frontmatter is
+already the metadata associated with that Concept. Reusing both avoids
+authored node IDs, node blocks, classified empty links, and merge rules for
+properties repeated through prose.
 
-With PGM, a knowledge graph can be in the same file as documentation, agent memory, and human-maintained knowledge. For example:
+PGM retains the complete frontmatter map. It does not classify keys as
+document metadata versus domain data because OKF intentionally permits
+producer-defined keys and does not establish that boundary.
 
-```markdown
-# Ada Lovelace
-[:Person {name: "Ada Lovelace"}]()
-[:Mathematician]()
+## Why `type` is retained and additionally structural
 
-Ada Lovelace was a matematician born 1815 in London.
-[:BORN_IN {year:1815}](London.md).
-```
+OKF defines `type` as a Concept Property with special meaning. Removing it
+from the Property map would make a PGM parse lossy and would treat one YAML key
+differently before an adapter has requested such a projection.
 
-The prose remains useful on its own, while the annotations provide deterministic property graph structure without requiring another representation. This reduces representational duplication and keeps edits to text and graph semantics in the same Git history.
+PGM therefore keeps `type` in the complete Node or Relationship Property map
+and additionally derives the optional Graph Element Type from a non-empty
+string value. This gives processors a convenient structural field without
+destroying source data. A database adapter may project that field to a label
+or relationship type and omit the redundant stored property in its target.
 
-## Why Ordinary Inline Links?
-
-Markdown already has a native construct that combines visible annotation text with an optional destination: the inline link.
-
-```markdown
-[:Person {name: "Ada"}]()
-[:BORN_IN {year: 1815}](London.md)
-```
-
-Both are valid CommonMark and remain inspectable in existing editors, renderers, diffs, and search tools. A PGM processor parses the normal CommonMark link first and then interprets its text and destination.
-
-## Why One Shared Syntax?
-
-Node labels, node properties, relationship types, and relationship properties belong to the same Property Graph model. Expressing them with one construct avoids separate property mechanisms and reserved annotation keywords for node lales.
-
-The lexical form `:CLASS {properties}` is identical for nodes and relationships. Structure supplies the distinction: an empty destination annotates the current node; a non-empty destination creates an outgoing relationship.
-
-## Why Does an Empty Destination Mean the Current Node?
-
-The current Markdown file already identifies the current graph node as the source.
-
-An empty destination is not the same as a destination that resolves to the current node. `[:Person]()` annotates the current node; it does not create a self-relationship such as `(current)-[:Person]->(current)`. A non-empty destination that resolves to the current document would still declare a relationship to that node.
-
-PGM treats a type annotation as the empty-target form of the same relationship-shaped syntax. This is a syntax unification, not a targetless relationship in the resulting Property Graph: when the target is empty, the type and properties annotate the current node and no relationship is emitted. When the target is non-empty, they describe an outgoing relationship. Using these two structural cases keeps the language uniform, simple, and minimal.
-
-An empty CommonMark destination therefore reads naturally as “apply here.” It also avoids custom headings, blocks, HTML attributes, and special label-reference files. CommonMark already normalizes both `()` and `(<>)` to an empty destination, so PGM does not need another parsing rule.
-
-## Why No Reserved LABEL Keyword?
-
-PGM 0.2.1 used `:LABEL` as a special marker and derived the actual label from the link destination.
-
-PGM 0.3.0 writes the label directly:
+The same derivation applies symmetrically to Relationships:
 
 ```markdown
-[:Person]()
+[Acme](Acme.md "{type: works_for, since: 2024}")
 ```
 
-This removes a reserved word, destination-to-label conversion rules, and a special case that prohibited properties. `LABEL` is now an ordinary class name.
+Omitting `type` naturally yields an untyped Relationship. A present but empty
+or non-string value is preserved as data, leaves the Relationship untyped, and
+warrants a diagnostic; PGM does not invent a sentinel such as `UNTYPED`.
 
-## Why YAML Flow Mapping?
+## Why optional Properties use a YAML Flow Map title
 
-Properties need a readable syntax inside link text. YAML flow mappings already provide strings, numbers, booleans, null, and lists:
+The Markdown title carries metadata without changing visible Link text or the
+Concept destination. A complete YAML Flow Mapping provides a deterministic
+Property boundary while delegating values and escaping to established parsers:
 
 ```markdown
-[:Person {name: "Ada", born: 1815, interests: [math, music]}]()
+[Acme](Acme.md "{since: 2024, roles: [architect, developer]}")
 ```
 
-PGM delegates flow-mapping syntax to YAML instead of defining a property mini-language.
+The title is enrichment, not an edge marker. No title, a normal text title,
+and an empty Mapping all retain the baseline untyped Relationship. Link text
+remains prose; treating it as a machine type would couple phrasing,
+localization, and formatting to graph structure.
 
-## Why Is Formal Domain Semantics Optional?
+The current Concept is the source and the resolved Concept destination is the
+target. That makes outgoing arrows redundant. Incoming Relationships are a
+query or backlink view, so an authored incoming marker would create duplicate
+authority for one edge.
 
-Formal vocabularies are valuable when deterministic validation or logical inference is required. They can also be expensive in the common case because they explicitly state facts that a human or language model can often infer from the surrounding text and names. For example, an OWL vocabulary might declare:
+## Why malformed enrichment is non-fatal
 
-```turtle
-:bornIn
-    rdf:type owl:ObjectProperty ;
-    rdfs:domain :Person ;
-    rdfs:range :City .
-```
+A brace-leading title that fails YAML parsing is likely an authoring mistake,
+so a diagnostic is useful. It cannot, however, erase the OKF relationship or
+make an otherwise valid OKF bundle cease to be PGM. The processor therefore
+keeps the ordinary title and baseline Relationship but extracts no partial
+Properties. Applications that demand clean annotations can promote the
+diagnostic in a separately identified strict profile.
 
-The corresponding PGM document can express the operational graph fact directly:
+## Why arbitrary YAML values are retained
 
-```markdown
-[:Person]()
-Born in [:BORN_IN](London.md).
-```
+PGM is an interchange model, not a least-common-denominator database schema.
+YAML mappings, sequences, timestamps, binary values, sets, and other values
+may be useful even when a specific graph engine accepts only primitive
+properties. The exporter is the correct layer for flattening, encoding, or
+rejection.
 
-The concise form does not replace formal validation, nor does it assert the domain and range constraints shown above. It covers the common authoring and agent-context case efficiently. A separate formal layer may be applied when a system needs stronger guarantees, without making that layer a prerequisite for every PGM corpus.
+Only outer Mapping keys must be strings because they name Properties. PGM does
+not maintain a second whitelist of YAML value types alongside the YAML parser
+used by the OKF bundle.
 
-## Why Only Outgoing Relationships?
+## Why OKF-named Relationship Properties stay opaque
 
-The Markdown file is the source node and a non-empty link destination is the target node. A separate arrow would repeat information already present in the structure.
+An OKF Concept and a PGM Relationship are different kinds of graph elements.
+Keys such as `sources`, `generated`, `verified`, `status`, or `stale_after`
+are preserved when authors place them in Relationship Properties, but core PGM
+does not silently transfer OKF's Concept-specific contracts to an edge.
 
-Allowing incoming declarations would make two files possible authorities for one edge and require conflict or merge rules. PGM therefore authors each relationship once, in its source document, and defines no `->` or `<-` markers.
+Provenance, trust, lifecycle, and attestation are valuable extensions. They
+need their own named profile so processors can agree on validation and meaning
+instead of inferring semantics from a coincidentally reused key.
 
-## Why a Natural Relationship Key?
+## Relationship identity
 
-PGM needs stable relationship semantics without adding an authored ID syntax. Source, type, target, and the canonical property map already contain the complete authored meaning of a relationship.
+PGM uses source Concept ID, target Concept ID, and the canonical complete
+Relationship Property map as the semantic key. Since `type` remains in that
+map, listing it separately in the key would be redundant. Link text and
+ordinary titles are source representation rather than graph identity, and
+YAML mapping order is presentation rather than semantics.
 
-PGM therefore uses `(source, type, target, canonical(properties))` as the natural key. Reordering links does not change that key. Equal annotations coalesce, while relationships with different properties remain distinct.
+A bare link and the same link titled `"{}"` may therefore coalesce. An
+implementation may hash the semantic tuple as an internal fingerprint; that
+hash is neither authored syntax nor a Property.
 
-A processor may hash this tuple for an internal fingerprint. That hash is not a PGM property and is not required in Markdown. Database-specific physical identity remains the graph database's responsibility.
+## Progressive enhancement
 
-## Why Both CREATE and MERGE Exports?
+A PGM-unaware tool still sees valid OKF, Markdown, and YAML:
 
-`CREATE` is the direct snapshot form and is appropriate when importing into an empty target. Its repeatability depends on clearing or replacing that target before each import; `CREATE` itself is not idempotent on a populated graph.
+- Concepts remain normal files with frontmatter.
+- Concept Links remain clickable and keep their OKF relationships.
+- YAML annotation titles remain ordinary link titles or tooltips.
+- Git diffs, static sites, editors, and search tools need no preprocessing.
 
-`MERGE` can match the complete natural relationship key and is therefore idempotent for repeated execution of the same corpus export. It does not remove stale relationships after source changes, so full synchronization remains an integration concern.
+PGM-aware processors add typed Properties, validation, export, and graph
+navigation without changing the source representation.
 
-## Why Are Node Property Conflicts Errors?
+## What earlier features were removed
 
-Multiple node annotations let labels and properties remain near relevant prose. This requires deterministic merge behavior.
+- **Classified link text or titles (`:TYPE`).** Use YAML `type` in a complete
+  Flow Mapping title.
+- **Properties outside the Markdown title.** Use Concept frontmatter or the
+  complete YAML title mapping.
+- **`->` and `<-`.** Link destinations already establish direction; incoming
+  views come from inverse traversal or backlinks.
+- **Empty-target node annotations.** OKF Concepts and frontmatter already
+  supply Node identity, Type, and Properties.
+- **YAML-title opt-in.** It conflicted with OKF's relationship semantics. Every
+  Concept Link is now a baseline Relationship and YAML only enriches it.
 
-Equivalent declarations are harmless. Different values for the same key are ambiguous, so PGM reports a validation error instead of choosing the first or last declaration silently.
+## Why the reference export is non-normative
 
-## Why Is the File Path Canonical?
-
-The file is the unit Markdown tools already understand. It has a path, title, version history, and links. Using the canonical corpus path as node identity avoids embedded IDs and custom node delimiters.
-
-For relationships, the visible class expression defines the type and properties; the destination remains the machine-readable target reference.
-
-## Why Are Wikilinks Conversion-Only?
-
-Wikilinks are useful in Obsidian, Logseq, and Foam, but they are not CommonMark. PGM therefore keeps classified CommonMark links as the complete core syntax.
-
-Treating wikilinks as a second semantic input language would weaken interoperability and leave no natural empty-destination form for node annotations. Editor integrations may instead convert recognizable wikilinks to canonical CommonMark links before extraction. After conversion, every processor sees the same document and semantics.
-
-
-## Why openCypher?
-
-openCypher is a widely understood query model for Property Graphs. It gives PGM a concrete semantic target without requiring a particular database vendor.
-
-## Why Not RDF?
-
-RDF is powerful, but PGM is deliberately shaped around the Property Graph model used by openCypher. PGM is not primarily intended to compete with RDF; it addresses a different authoring center of gravity.
-
-As a design shorthand, RDF and OWL optimize knowledge for formal interoperability and logical reasoners. PGM optimizes knowledge for people, Git workflows, and AI agents while retaining a deterministic transformation to a Property Graph. That goal leads directly to minimal syntax, high readability, inline use in prose, version-control-friendly files, and no mandatory parallel representation.
-
-RDF export may be useful later, but it is not the smallest core for this proposal.
-
-## Why Not HTML Extensions or Custom Blocks?
-
-HTML attributes and custom blocks would add source noise, grammar, and renderer complexity. PGM keeps graph semantics where Markdown authors already express connections: inline links in prose, lists, and notes.
-
-## Why Keep 0.3.0 So Small?
-
-PGM should feel like CommonMark, YAML, or OpenAPI: a specification first, not an application framework.
+Cypher is a useful illustration and integration target, but it is not the PGM
+data model. Cypher labels, mandatory relationship types, and value limits must
+not narrow valid PGM. The reference adapter maps typed examples and reports an
+explicit target limitation when a source contains an untyped Relationship or
+an unsupported YAML value.
