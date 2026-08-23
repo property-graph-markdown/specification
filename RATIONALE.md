@@ -1,4 +1,4 @@
-# PGM 0.4 Rationale
+# PGM 0.4 rationale
 
 ## A semantic profile, not a Markdown extension
 
@@ -6,159 +6,214 @@ PGM's design center is:
 
 > PGM adds graph semantics, not syntax.
 
-OKF already defines a portable collection of Concepts as Markdown documents
-with YAML frontmatter. Markdown already defines directed links, link text,
-destinations, and optional titles. YAML already defines readable structured
-values. PGM only specifies how those constructs map to a Property Graph.
+OKF already defines Concepts, Concept IDs, and Link assertions in Markdown
+documents with YAML frontmatter. Markdown already defines Link text,
+destinations, titles, and direction. YAML already defines structured values.
+PGM specifies their property-graph interpretation and adds no Link expression,
+arrow, type token, or Property mini-language.
 
-CommonMark 0.31.2 is the reference grammar for canonical PGM Link examples,
-not the conceptual boundary of the model. Another Markdown profile is usable
-when it exposes equivalent parsed Link text, destination, and title fields.
+CommonMark 0.31.2 is the canonical reference profile, not a proprietary parser
+boundary. Another Markdown profile remains usable when it exposes equivalent
+parsed Link fields and declares itself in conformance reports.
 
-## Why the interpretation is monotonic over OKF
+## Why every Concept Link occurrence remains a Relationship
 
-OKF says a Concept Link from Concept A to Concept B asserts a relationship and
-describes its graph view as directed and untyped. Interoperability therefore
-requires PGM to preserve that baseline: every OKF Concept becomes a Node and
-every OKF Concept Link becomes a Relationship.
+OKF says a Link from Concept A to Concept B asserts a relationship and
+describes the normal graph interpretation as directed and untyped. Requiring a
+YAML title would remove OKF relationships rather than enrich them.
 
-Making Relationships depend on a YAML title would invert progressive
-enhancement. The same OKF bundle would lose relationships when read as PGM,
-and adding optional metadata would unexpectedly determine whether an edge
-exists. Under the monotonic rule, enrichment can add a Type or Properties but
-cannot delete the underlying OKF Relationship.
+PGM therefore maps every Concept Link occurrence to one Relationship
+occurrence. YAML metadata can add Properties and a Type, but cannot determine
+whether the assertion exists. Repeated Links are repeated assertions and are
+not silently removed by the Core processor.
 
-This also handles navigational links consistently. If a link targets a Concept
-under OKF path rules, it is part of OKF's graph. Authors who need a purely
-external or non-conceptual navigation target can use a destination that is not
-an OKF Concept ID.
+This is intentionally a multigraph interpretation. An application may offer a
+deduplicated view based on the portable semantic key, but that view does not
+replace the occurrence-preserving PGM Core Result.
 
-## Why Concepts become Nodes
+## Why fragment-only Links are not Relationships
 
-An OKF Concept already has stable identity: its Concept ID. Its frontmatter is
-already the metadata associated with that Concept. Reusing both avoids
-authored node IDs, node blocks, classified empty links, and merge rules for
-properties repeated through prose.
+Obsidian vaults, documentation sites, and CommonMark documents frequently use
+`#heading` Links for a table of contents or local navigation. Such a Link has
+no Concept path and OKF §6.1 defines cross-Concept Links through absolute or
+relative paths. Treating every local heading jump as a self-edge would add
+large amounts of accidental graph data.
 
-PGM retains the complete frontmatter map. It does not classify keys as
-document metadata versus domain data because OKF intentionally permits
-producer-defined keys and does not establish that boundary.
+`Concept.md#heading` still names a Concept and therefore remains a
+Relationship; the fragment does not participate in the target Concept ID.
+Query-bearing destinations are excluded because OKF defines path identities,
+not query-parameter variants of Concepts.
 
-## Why `type` is retained and additionally structural
+The resolver percent-decodes each path segment once, remains within the bundle
+root, rejects encoded separators, and preserves case and Unicode code points.
+This prevents filesystem-dependent identities and traversal ambiguities.
 
-OKF defines `type` as a Concept Property with special meaning. Removing it
-from the Property map would make a PGM parse lossy and would treat one YAML key
-differently before an adapter has requested such a projection.
+## Why broken targets do not become Nodes
 
-PGM therefore keeps `type` in the complete Node or Relationship Property map
-and additionally derives the optional Graph Element Type from a non-empty
-string value. This gives processors a convenient structural field without
-destroying source data. A database adapter may project that field to a label
-or relationship type and omit the redundant stored property in its target.
+OKF requires consumers to tolerate broken Links because a target may represent
+not-yet-written knowledge. The assertion therefore survives as a Relationship
+to an unresolved Concept ID reference.
 
-The same derivation applies symmetrically to Relationships:
+A PGM Node, however, is the interpretation of a present Concept. Creating a
+Node with no Concept, frontmatter, or required OKF Type would contradict that
+definition. PGM Core keeps the dangling reference and exposes resolution as a
+derived status.
 
-```markdown
-[Acme](Acme.md "{type: works_for, since: 2024}")
-```
+Graph databases and relational schemas may need an endpoint record. Their
+adapters may create a clearly marked placeholder, but it remains an adapter
+artifact. When the Concept later appears, the same Concept ID can resolve the
+placeholder without changing the original Link assertion.
 
-Omitting `type` naturally yields an untyped Relationship. A present but empty
-or non-string value is preserved as data, leaves the Relationship untyped, and
-warrants a diagnostic; PGM does not invent a sentinel such as `UNTYPED`.
+## Why complete Property maps and `type` are retained
 
-## Why optional Properties use a YAML Flow Map title
+OKF intentionally permits producer-defined frontmatter entries. PGM therefore
+does not divide frontmatter into document metadata and domain data. The
+complete Mapping becomes Node Properties.
 
-The Markdown title carries metadata without changing visible Link text or the
-Concept destination. A complete YAML Flow Mapping provides a deterministic
-Property boundary while delegating values and escaping to established parsers:
+Likewise, the complete YAML Flow Mapping in an eligible Link title becomes
+Relationship Properties. A non-empty string `type` is retained and is also
+exposed as the Graph Element Type. Removing it would make parsing lossy and
+would give one Property special deletion behavior.
+
+An absent, empty, or non-string Relationship `type` naturally leaves the
+Relationship untyped. PGM does not invent `UNTYPED` or `RELATED_TO` in its Core
+model. Adapters can use a generic native Relationship Type and store the
+optional PGM Type separately.
+
+## Why optional Properties use a YAML Flow Mapping title
+
+The normal Markdown title carries metadata without changing visible Link text
+or the Concept destination:
 
 ```markdown
 [Acme](Acme.md "{since: 2024, roles: [architect, developer]}")
 ```
 
-The title is enrichment, not an edge marker. No title, a normal text title,
-and an empty Mapping all retain the baseline untyped Relationship. Link text
-remains prose; treating it as a machine type would couple phrasing,
-localization, and formatting to graph structure.
+A complete Flow Mapping gives the annotation an unambiguous boundary while
+leaving parsing, escaping, sequences, and nested values to YAML. Link text
+remains prose and may change with wording or localization without changing the
+graph value.
 
-The current Concept is the source and the resolved Concept destination is the
-target. That makes outgoing arrows redundant. Incoming Relationships are a
-query or backlink view, so an authored incoming marker would create duplicate
-authority for one edge.
+No title, an ordinary text title, and `{}` all describe an empty Relationship
+Property map. They remain separate occurrences if all are authored. A
+brace-leading but invalid annotation warrants a warning, yet cannot erase the
+baseline OKF assertion or make PGM Core invalid.
 
-## Why malformed enrichment is non-fatal
+## Why PGM pins a YAML profile
 
-A brace-leading title that fails YAML parsing is likely an authoring mistake,
-so a diagnostic is useful. It cannot, however, erase the OKF relationship or
-make an otherwise valid OKF bundle cease to be PGM. The processor therefore
-keeps the ordinary title and baseline Relationship but extracts no partial
-Properties. Applications that demand clean annotations can promote the
-diagnostic in a separately identified strict profile.
+Saying only “use YAML” is insufficient for interoperable graph values. YAML
+1.1 and YAML 1.2 resolve `yes` differently; many YAML 1.2 libraries still
+implicitly construct untagged timestamps even though the YAML 1.2.2 Core
+Schema does not. Duplicate keys and application-specific tags also vary by
+implementation.
 
-## Why arbitrary YAML values are retained
+PGM therefore pins YAML 1.2.2 Core Schema for implicit resolution. Untagged
+dates are strings; an author who needs a timestamp value writes
+`!!timestamp`. Safe explicit binary, timestamp, and set values are supported,
+while arbitrary object construction is forbidden.
 
-PGM is an interchange model, not a least-common-denominator database schema.
-YAML mappings, sequences, timestamps, binary values, sets, and other values
-may be useful even when a specific graph engine accepts only primitive
-properties. The exporter is the correct layer for flattening, encoding, or
-rejection.
+Aliases are presentation for repeated values. Acyclic aliases are expanded by
+value; cycles cannot be represented consistently in JSON, Cypher, or the
+property-graph model and are rejected. Duplicate Mapping keys are rejected
+rather than resolved by parser-specific first-wins or last-wins behavior.
 
-Only outer Mapping keys must be strings because they name Properties. PGM does
-not maintain a second whitelist of YAML value types alongside the YAML parser
-used by the OKF bundle.
+## Why Relationship identification has two levels
+
+OKF does not define Relationship IDs, duplicate elimination, or hashing. PGM
+must therefore preserve Link occurrences independently from any database
+identity policy.
+
+Two portable values serve different purposes:
+
+- `relationship_key` identifies the semantic assertion tuple of source,
+  target, and complete Properties. It supports comparison, grouping, and a
+  deliberately deduplicated view.
+- `relationship_id` adds a zero-based ordinal among equal preceding assertions
+  in the same source document. It allows identical parallel Relationships to
+  coexist in JSON and Cypher.
+
+Unrelated Link insertions do not affect the ordinal. Inserting an identical
+Link before another identical Link necessarily changes which indistinguishable
+occurrence receives which ordinal. Stable identity across arbitrary Property
+or endpoint edits requires an authored application ID or database surrogate;
+it cannot be derived from content alone.
+
+The identifiers are bundle-relative because OKF does not define a global
+Bundle ID. Multi-bundle stores scope them with an external bundle identifier.
+
+## Why the canonical value encoding is fully tagged
+
+JSON objects alone cannot distinguish a YAML date from an authored Mapping
+that happens to look like a technical date wrapper. JSON also cannot directly
+carry sets, binary values, non-string nested Mapping keys, large integers,
+NaN, or infinity without implementation-dependent loss.
+
+Canonical PGM Value v1 therefore tags every value and represents Mappings as
+sorted entry arrays. No authored Mapping or Sequence can collide with the
+technical envelope. Numbers are encoded as reduced rational strings, so large
+integers remain exact and numerically equal integer/float values compare
+equally. Booleans remain distinct from numbers.
+
+The resulting number-free JSON subset is serialized with RFC 8785 JCS and
+hashed with SHA-256. Unicode is preserved without normalization, as required by
+JCS. Golden vectors make cross-language implementations testable.
+
+This encoding round-trips the canonical PGM value, not YAML presentation.
+Comments, scalar style, anchor names, aliases, and authored Mapping order are
+intentionally not recovered.
+
+## Why validation stays local and auditable
+
+The immutable OKF specification is normative; a moving package or `main`
+branch cannot define reproducible conformance. The reference processor applies
+the pinned OKF checks through a small local adapter and then applies the PGM
+YAML, path, and graph rules.
+
+`markdown-it-py`, `ruamel.yaml`, and `jsonschema` are implementation choices,
+not normative PGM dependencies. The executable language-neutral TCK records
+only normative Core behavior so other languages can test the same contract.
+Portable IDs, JSON exchange, reference diagnostics, and adapter snapshots are
+tested separately because they belong to different conformance classes or are
+recommended implementation behavior.
+
+Errors, warnings, and adapter errors are separate. An invalid optional
+Relationship annotation is a warning because the Core Relationship survives.
+A Cypher mapping limitation is an adapter error and cannot make the OKF
+or PGM source invalid.
+
+## Why JSON and Cypher remain adapters
+
+PGM is a source and graph model, not a query language or database schema. The
+reference outputs demonstrate faithful mappings:
+
+- JSON carries the complete typed value representation and portable IDs. Its
+  strict importer verifies derived fields so export-import-export preserves the
+  same Core Result rather than trusting inconsistent cached values.
+- Cypher uses generic technical Node and Relationship Types so untyped PGM
+  Relationships remain representable.
+
+Authored Properties stay inside the canonical JSON value instead of competing
+with technical fields such as `pgm_concept_id` or `pgm_relationship_id`.
+The JSON exchange retains unresolved targets as references without inventing
+Nodes; the Cypher projection materializes them only as marked adapter
+placeholders.
+
+These envelope names, labels, and fields are informative. The PGM Core semantics
+and the optional portable identification algorithm remain independent of a
+specific database.
 
 ## Why OKF-named Relationship Properties stay opaque
 
-An OKF Concept and a PGM Relationship are different kinds of graph elements.
-Keys such as `sources`, `generated`, `verified`, `status`, or `stale_after`
-are preserved when authors place them in Relationship Properties, but core PGM
-does not silently transfer OKF's Concept-specific contracts to an edge.
+An OKF Concept and a PGM Relationship are different graph elements. Keys such
+as `sources`, `generated`, `verified`, `status`, or `stale_after` remain
+ordinary Relationship Properties unless a separately named profile defines
+their edge semantics. Coincidentally reusing an OKF field name must not silently
+transfer Concept-specific provenance or lifecycle rules.
 
-Provenance, trust, lifecycle, and attestation are valuable extensions. They
-need their own named profile so processors can agree on validation and meaning
-instead of inferring semantics from a coincidentally reused key.
+## What earlier drafts removed
 
-## Relationship identity
-
-PGM uses source Concept ID, target Concept ID, and the canonical complete
-Relationship Property map as the semantic key. Since `type` remains in that
-map, listing it separately in the key would be redundant. Link text and
-ordinary titles are source representation rather than graph identity, and
-YAML mapping order is presentation rather than semantics.
-
-A bare link and the same link titled `"{}"` may therefore coalesce. An
-implementation may hash the semantic tuple as an internal fingerprint; that
-hash is neither authored syntax nor a Property.
-
-## Progressive enhancement
-
-A PGM-unaware tool still sees valid OKF, Markdown, and YAML:
-
-- Concepts remain normal files with frontmatter.
-- Concept Links remain clickable and keep their OKF relationships.
-- YAML annotation titles remain ordinary link titles or tooltips.
-- Git diffs, static sites, editors, and search tools need no preprocessing.
-
-PGM-aware processors add typed Properties, validation, export, and graph
-navigation without changing the source representation.
-
-## What earlier features were removed
-
-- **Classified link text or titles (`:TYPE`).** Use YAML `type` in a complete
-  Flow Mapping title.
-- **Properties outside the Markdown title.** Use Concept frontmatter or the
-  complete YAML title mapping.
-- **`->` and `<-`.** Link destinations already establish direction; incoming
-  views come from inverse traversal or backlinks.
-- **Empty-target node annotations.** OKF Concepts and frontmatter already
-  supply Node identity, Type, and Properties.
-- **YAML-title opt-in.** It conflicted with OKF's relationship semantics. Every
-  Concept Link is now a baseline Relationship and YAML only enriches it.
-
-## Why the reference export is non-normative
-
-Cypher is a useful illustration and integration target, but it is not the PGM
-data model. Cypher labels, mandatory relationship types, and value limits must
-not narrow valid PGM. The reference adapter maps typed examples and reports an
-explicit target limitation when a source contains an untyped Relationship or
-an unsupported YAML value.
+PGM 0.4 removes classified Link text or titles such as `:TYPE`, Property
+expressions outside a Markdown title, authored `->`/`<-` markers, and
+empty-target node annotations. OKF Concepts already provide Node identity and
+frontmatter; Markdown destinations already provide direction; YAML already
+provides structured values.

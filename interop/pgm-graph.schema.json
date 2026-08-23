@@ -1,0 +1,319 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:pgm:schema:graph:1",
+  "title": "PGM JSON Exchange Profile v1",
+  "description": "Lossless JSON exchange shape for a PGM 0.4.0 Public Draft Core Result with Portable Relationship Identification v1.",
+  "$comment": "Cross-member semantic invariants, identifier recomputation, occurrence continuity, and resolved-target membership are additionally enforced by graph_from_data().",
+  "type": "object",
+  "required": [
+    "format",
+    "formatVersion",
+    "pgmVersion",
+    "conformance",
+    "nodes",
+    "relationships",
+    "diagnostics"
+  ],
+  "properties": {
+    "format": { "const": "pgm-graph" },
+    "formatVersion": { "const": "1" },
+    "pgmVersion": { "const": "0.4.0 Public Draft" },
+    "conformance": { "$ref": "#/$defs/conformance" },
+    "nodes": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/node" },
+      "uniqueItems": true
+    },
+    "relationships": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/relationship" },
+      "uniqueItems": true
+    },
+    "diagnostics": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/diagnostic" }
+    }
+  },
+  "additionalProperties": false,
+  "$defs": {
+    "conformance": {
+      "type": "object",
+      "required": [
+        "classes",
+        "processorName",
+        "processorVersion",
+        "exchangeProfile",
+        "schema",
+        "okfCommit",
+        "okfSpecSha256",
+        "markdownProfile",
+        "yamlProfile",
+        "yamlExplicitTags",
+        "yamlAliasPolicy",
+        "diagnosticCategories"
+      ],
+      "properties": {
+        "classes": {
+          "type": "array",
+          "items": { "type": "string", "minLength": 1 },
+          "minItems": 3,
+          "uniqueItems": true,
+          "allOf": [
+            { "contains": { "const": "PGM Core Processor" } },
+            {
+              "contains": {
+                "const": "Portable Relationship Identification Processor"
+              }
+            },
+            { "contains": { "const": "PGM JSON Exchange Processor" } }
+          ]
+        },
+        "processorName": { "type": "string", "minLength": 1 },
+        "processorVersion": { "type": "string", "minLength": 1 },
+        "exchangeProfile": { "const": "PGM JSON Exchange Profile v1" },
+        "schema": { "const": "urn:pgm:schema:graph:1" },
+        "okfCommit": {
+          "const": "3fcbb9f828c2f23d109c855ee403c3a4c81f3a96"
+        },
+        "okfSpecSha256": {
+          "const": "5a3311d270bebb16d558010e75064f5b75323f284992641732b1c8097511f948"
+        },
+        "markdownProfile": { "type": "string", "minLength": 1 },
+        "yamlProfile": { "const": "YAML 1.2.2 Core Schema" },
+        "yamlExplicitTags": {
+          "type": "array",
+          "items": { "type": "string", "minLength": 1 },
+          "minItems": 3,
+          "uniqueItems": true,
+          "allOf": [
+            { "contains": { "const": "tag:yaml.org,2002:binary" } },
+            { "contains": { "const": "tag:yaml.org,2002:set" } },
+            { "contains": { "const": "tag:yaml.org,2002:timestamp" } }
+          ]
+        },
+        "yamlAliasPolicy": {
+          "const": "acyclic-expand-by-value; cycles-rejected"
+        },
+        "diagnosticCategories": {
+          "const": {
+            "coreErrors": "error",
+            "warnings": "warning",
+            "adapterErrors": "adapter-error"
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    "node": {
+      "type": "object",
+      "required": ["id", "type", "properties"],
+      "properties": {
+        "id": { "$ref": "#/$defs/conceptId" },
+        "type": { "$ref": "#/$defs/graphType" },
+        "properties": { "$ref": "#/$defs/propertyDocument" }
+      },
+      "additionalProperties": false
+    },
+    "relationship": {
+      "type": "object",
+      "required": [
+        "id",
+        "relationshipKey",
+        "occurrence",
+        "source",
+        "target",
+        "resolved",
+        "type",
+        "properties",
+        "linkText",
+        "title"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^pgmrel:v1:sha256:[0-9a-f]{64}$"
+        },
+        "relationshipKey": {
+          "type": "string",
+          "pattern": "^pgmkey:v1:sha256:[0-9a-f]{64}$"
+        },
+        "occurrence": { "type": "integer", "minimum": 0 },
+        "source": { "$ref": "#/$defs/conceptId" },
+        "target": { "$ref": "#/$defs/conceptId" },
+        "resolved": { "type": "boolean" },
+        "type": {
+          "oneOf": [
+            { "$ref": "#/$defs/graphType" },
+            { "type": "null" }
+          ]
+        },
+        "properties": { "$ref": "#/$defs/propertyDocument" },
+        "linkText": { "type": "string" },
+        "title": { "type": ["string", "null"] }
+      },
+      "additionalProperties": false
+    },
+    "diagnostic": {
+      "type": "object",
+      "required": ["severity", "code", "message"],
+      "properties": {
+        "severity": { "const": "warning" },
+        "code": {
+          "type": "string",
+          "pattern": "^[A-Z][A-Z0-9_]*$"
+        },
+        "message": { "type": "string", "minLength": 1 },
+        "document": { "type": "string", "minLength": 1 }
+      },
+      "additionalProperties": false
+    },
+    "conceptId": {
+      "type": "string",
+      "minLength": 1,
+      "pattern": "^(?!/)(?![\\s\\S]*//)(?!(?:[\\s\\S]*/)?\\.\\.?(?:/|(?![\\s\\S])))(?![\\s\\S]*\\\\)(?![\\s\\S]*[\\u0000-\\u001F\\u007F])(?!(?:[\\s\\S]*/)?(?:index|log)(?![\\s\\S]))[\\s\\S]+$(?![\\s\\S])"
+    },
+    "graphType": {
+      "type": "string",
+      "minLength": 1
+    },
+    "propertyDocument": {
+      "type": "array",
+      "prefixItems": [
+        { "const": "pgm-yaml" },
+        { "const": "v1" },
+        { "$ref": "#/$defs/mappingValue" }
+      ],
+      "minItems": 3,
+      "maxItems": 3
+    },
+    "taggedValue": {
+      "oneOf": [
+        { "$ref": "#/$defs/nullValue" },
+        { "$ref": "#/$defs/boolValue" },
+        { "$ref": "#/$defs/numberValue" },
+        { "$ref": "#/$defs/stringValue" },
+        { "$ref": "#/$defs/binaryValue" },
+        { "$ref": "#/$defs/dateValue" },
+        { "$ref": "#/$defs/timestampValue" },
+        { "$ref": "#/$defs/sequenceValue" },
+        { "$ref": "#/$defs/mappingValue" },
+        { "$ref": "#/$defs/setValue" }
+      ]
+    },
+    "nullValue": {
+      "type": "array",
+      "prefixItems": [{ "const": "null" }],
+      "minItems": 1,
+      "maxItems": 1
+    },
+    "boolValue": {
+      "type": "array",
+      "prefixItems": [
+        { "const": "bool" },
+        { "type": "boolean" }
+      ],
+      "minItems": 2,
+      "maxItems": 2
+    },
+    "numberValue": {
+      "type": "array",
+      "prefixItems": [
+        { "const": "number" },
+        {
+          "type": "string",
+          "pattern": "^(?:0|-?[1-9][0-9]*|-?[1-9][0-9]*/(?:[2-9]|[1-9][0-9]+)|nan|\\+inf|-inf)$"
+        }
+      ],
+      "minItems": 2,
+      "maxItems": 2
+    },
+    "stringValue": {
+      "type": "array",
+      "prefixItems": [
+        { "const": "string" },
+        { "type": "string" }
+      ],
+      "minItems": 2,
+      "maxItems": 2
+    },
+    "binaryValue": {
+      "type": "array",
+      "prefixItems": [
+        { "const": "binary" },
+        {
+          "type": "string",
+          "pattern": "^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$"
+        }
+      ],
+      "minItems": 2,
+      "maxItems": 2
+    },
+    "dateValue": {
+      "type": "array",
+      "prefixItems": [
+        { "const": "date" },
+        { "type": "string", "pattern": "^(?!0000)[0-9]{4}-[0-9]{2}-[0-9]{2}$" }
+      ],
+      "minItems": 2,
+      "maxItems": 2
+    },
+    "timestampValue": {
+      "type": "array",
+      "prefixItems": [
+        { "const": "timestamp" },
+        {
+          "type": "string",
+          "pattern": "^(?!0000)[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}(?:\\.[0-9]{1,6})?Z?$"
+        }
+      ],
+      "minItems": 2,
+      "maxItems": 2
+    },
+    "sequenceValue": {
+      "type": "array",
+      "prefixItems": [
+        { "const": "sequence" },
+        {
+          "type": "array",
+          "items": { "$ref": "#/$defs/taggedValue" }
+        }
+      ],
+      "minItems": 2,
+      "maxItems": 2
+    },
+    "mappingValue": {
+      "type": "array",
+      "prefixItems": [
+        { "const": "mapping" },
+        {
+          "type": "array",
+          "items": { "$ref": "#/$defs/mappingEntry" }
+        }
+      ],
+      "minItems": 2,
+      "maxItems": 2
+    },
+    "mappingEntry": {
+      "type": "array",
+      "prefixItems": [
+        { "$ref": "#/$defs/taggedValue" },
+        { "$ref": "#/$defs/taggedValue" }
+      ],
+      "minItems": 2,
+      "maxItems": 2
+    },
+    "setValue": {
+      "type": "array",
+      "prefixItems": [
+        { "const": "set" },
+        {
+          "type": "array",
+          "items": { "$ref": "#/$defs/taggedValue" },
+          "uniqueItems": true
+        }
+      ],
+      "minItems": 2,
+      "maxItems": 2
+    }
+  }
+}

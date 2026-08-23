@@ -1,0 +1,318 @@
+{
+  "conformance": {
+    "classes": [
+      "PGM Core Processor",
+      "Portable Relationship Identification Processor",
+      "PGM JSON Exchange Processor"
+    ],
+    "diagnosticCategories": {
+      "adapterErrors": "adapter-error",
+      "coreErrors": "error",
+      "warnings": "warning"
+    },
+    "exchangeProfile": "PGM JSON Exchange Profile v1",
+    "markdownProfile": "CommonMark 0.31.2",
+    "okfCommit": "3fcbb9f828c2f23d109c855ee403c3a4c81f3a96",
+    "okfSpecSha256": "5a3311d270bebb16d558010e75064f5b75323f284992641732b1c8097511f948",
+    "processorName": "pgmark",
+    "processorVersion": "0.4.0a1",
+    "schema": "urn:pgm:schema:graph:1",
+    "yamlAliasPolicy": "acyclic-expand-by-value; cycles-rejected",
+    "yamlExplicitTags": [
+      "tag:yaml.org,2002:binary",
+      "tag:yaml.org,2002:set",
+      "tag:yaml.org,2002:timestamp"
+    ],
+    "yamlProfile": "YAML 1.2.2 Core Schema"
+  },
+  "diagnostics": [],
+  "format": "pgm-graph",
+  "formatVersion": "1",
+  "nodes": [
+    {
+      "id": "organizations/Acme",
+      "properties": [
+        "pgm-yaml",
+        "v1",
+        [
+          "mapping",
+          [
+            [
+              [
+                "string",
+                "name"
+              ],
+              [
+                "string",
+                "Acme Corporation"
+              ]
+            ],
+            [
+              [
+                "string",
+                "type"
+              ],
+              [
+                "string",
+                "Organization"
+              ]
+            ]
+          ]
+        ]
+      ],
+      "type": "Organization"
+    },
+    {
+      "id": "people/Alice",
+      "properties": [
+        "pgm-yaml",
+        "v1",
+        [
+          "mapping",
+          [
+            [
+              [
+                "string",
+                "joined_on"
+              ],
+              [
+                "string",
+                "2024-01-15"
+              ]
+            ],
+            [
+              [
+                "string",
+                "name"
+              ],
+              [
+                "string",
+                "Alice"
+              ]
+            ],
+            [
+              [
+                "string",
+                "type"
+              ],
+              [
+                "string",
+                "Person"
+              ]
+            ]
+          ]
+        ]
+      ],
+      "type": "Person"
+    }
+  ],
+  "pgmVersion": "0.4.0 Public Draft",
+  "relationships": [
+    {
+      "id": "pgmrel:v1:sha256:990fcab63bdb3b5db0079d7e66d8597043875b47a5ceac127017bc5248f17196",
+      "linkText": "Future partner",
+      "occurrence": 0,
+      "properties": [
+        "pgm-yaml",
+        "v1",
+        [
+          "mapping",
+          [
+            [
+              [
+                "string",
+                "type"
+              ],
+              [
+                "string",
+                "considers"
+              ]
+            ]
+          ]
+        ]
+      ],
+      "relationshipKey": "pgmkey:v1:sha256:07f901c01837c84ae0cac4bf90e9ee4720630d27f3b1ee22e51cb867c3575247",
+      "resolved": false,
+      "source": "people/Alice",
+      "target": "future/Partner",
+      "title": "{type: considers}",
+      "type": "considers"
+    },
+    {
+      "id": "pgmrel:v1:sha256:6318ac99547f34bcf7d4a07d133e68738c5f42d25a0b861a9c80597aeb041fed",
+      "linkText": "Acme",
+      "occurrence": 0,
+      "properties": [
+        "pgm-yaml",
+        "v1",
+        [
+          "mapping",
+          [
+            [
+              [
+                "string",
+                "since"
+              ],
+              [
+                "number",
+                "2024"
+              ]
+            ],
+            [
+              [
+                "string",
+                "type"
+              ],
+              [
+                "string",
+                "works_for"
+              ]
+            ]
+          ]
+        ]
+      ],
+      "relationshipKey": "pgmkey:v1:sha256:0bda439c04c78d9ed99b1ed3d74ddb6f0760220c4560185685bde3d480ee8510",
+      "resolved": true,
+      "source": "people/Alice",
+      "target": "organizations/Acme",
+      "title": "{type: works_for, since: 2024}",
+      "type": "works_for"
+    },
+    {
+      "id": "pgmrel:v1:sha256:8aa5f576ab2af4a76db0b48986e3270c65e8fdf7a0e9c37ef6554164af412c60",
+      "linkText": "Acme",
+      "occurrence": 0,
+      "properties": [
+        "pgm-yaml",
+        "v1",
+        [
+          "mapping",
+          [
+            [
+              [
+                "string",
+                "since"
+              ],
+              [
+                "number",
+                "2024"
+              ]
+            ]
+          ]
+        ]
+      ],
+      "relationshipKey": "pgmkey:v1:sha256:433a9890ca8b3b711bce26c8eb51d9c43432e39218a15480adec2b028dec1da0",
+      "resolved": true,
+      "source": "people/Alice",
+      "target": "organizations/Acme",
+      "title": "{since: 2024}",
+      "type": null
+    },
+    {
+      "id": "pgmrel:v1:sha256:8cc7d9c942ff6fb7ba019aa85863e804e03bf191ef35c38144a335e0f79bab55",
+      "linkText": "Acme",
+      "occurrence": 0,
+      "properties": [
+        "pgm-yaml",
+        "v1",
+        [
+          "mapping",
+          []
+        ]
+      ],
+      "relationshipKey": "pgmkey:v1:sha256:752cd77e80b7c1964dcef926db001bf29c8d94b08fcd840f35f94fa6cfc88002",
+      "resolved": true,
+      "source": "people/Alice",
+      "target": "organizations/Acme",
+      "title": null,
+      "type": null
+    },
+    {
+      "id": "pgmrel:v1:sha256:a3d55bd730bc54f328001d1aaa811c8c04edd5efcc9631adacb067e28fe5207e",
+      "linkText": "Acme",
+      "occurrence": 1,
+      "properties": [
+        "pgm-yaml",
+        "v1",
+        [
+          "mapping",
+          []
+        ]
+      ],
+      "relationshipKey": "pgmkey:v1:sha256:752cd77e80b7c1964dcef926db001bf29c8d94b08fcd840f35f94fa6cfc88002",
+      "resolved": true,
+      "source": "people/Alice",
+      "target": "organizations/Acme",
+      "title": "Acme Corporation",
+      "type": null
+    },
+    {
+      "id": "pgmrel:v1:sha256:281cc1fc4b78ffeeee8d69333c7a2b82ce188a5111c378a4cb3a7de23ce7eaad",
+      "linkText": "Acme",
+      "occurrence": 2,
+      "properties": [
+        "pgm-yaml",
+        "v1",
+        [
+          "mapping",
+          []
+        ]
+      ],
+      "relationshipKey": "pgmkey:v1:sha256:752cd77e80b7c1964dcef926db001bf29c8d94b08fcd840f35f94fa6cfc88002",
+      "resolved": true,
+      "source": "people/Alice",
+      "target": "organizations/Acme",
+      "title": "{}",
+      "type": null
+    },
+    {
+      "id": "pgmrel:v1:sha256:e010867bd00f8a62a191d33afc77a2ab4c8a53c0423f4ab82b470ce99ca67cef",
+      "linkText": "Acme profile",
+      "occurrence": 3,
+      "properties": [
+        "pgm-yaml",
+        "v1",
+        [
+          "mapping",
+          []
+        ]
+      ],
+      "relationshipKey": "pgmkey:v1:sha256:752cd77e80b7c1964dcef926db001bf29c8d94b08fcd840f35f94fa6cfc88002",
+      "resolved": true,
+      "source": "people/Alice",
+      "target": "organizations/Acme",
+      "title": null,
+      "type": null
+    },
+    {
+      "id": "pgmrel:v1:sha256:0be9f480b7e9f3f014ce48f0df76c3bfdb7c8ffa24441482221b1539bd63f9f8",
+      "linkText": "Acme",
+      "occurrence": 0,
+      "properties": [
+        "pgm-yaml",
+        "v1",
+        [
+          "mapping",
+          [
+            [
+              [
+                "string",
+                "type"
+              ],
+              [
+                "string",
+                "works_for"
+              ]
+            ]
+          ]
+        ]
+      ],
+      "relationshipKey": "pgmkey:v1:sha256:83213a76d9832cca7ccf828212078bcee041a78459fe7a25ce3d2a8dc574054c",
+      "resolved": true,
+      "source": "people/Alice",
+      "target": "organizations/Acme",
+      "title": "{type: works_for}",
+      "type": "works_for"
+    }
+  ]
+}

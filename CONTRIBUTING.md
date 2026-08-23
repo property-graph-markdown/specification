@@ -35,18 +35,32 @@ Specification changes should update:
 
 - `SPEC.md`
 - `RATIONALE.md`
-- `GRAMMAR.ebnf`, only to preserve the explicit no-independent-grammar notice
+- the JSON exchange schema when its versioned contract changes
 - examples and tests, when behavior changes
 
 ## Parser Changes
 
-The reference parser favors readability over optimization. Please keep it small, direct, and easy to inspect.
+The reference parser favors readability over optimization. Please keep it
+small, direct, and easy to inspect. Its runtime stack is intentionally limited
+to `markdown-it-py`, `ruamel.yaml`, and `jsonschema`; do not add
+`reference-agent` as a runtime dependency. Any external OKF validator belongs
+in supplemental CI and must not replace validation against the pinned OKF
+commit.
 
-Run:
+Run the complete reference checks from the repository root:
 
 ```sh
-python -m unittest discover -s tests
+python -m unittest discover -s tests -v
+npm --prefix pgm-schema test
+npm --prefix pgm-schema run validate
 ```
+
+Behavioral changes need a language-neutral case in `tests/core.yaml` whenever
+the outcome is a normative Core Result or conformance decision. Recommended
+warnings and reference diagnostic codes belong in implementation tests, not in
+the Core pass criteria. JSON exchange changes need an export-import-export test
+and schema validation. Cypher changes need deterministic CREATE and MERGE
+snapshots.
 
 ## Open Standard Direction
 

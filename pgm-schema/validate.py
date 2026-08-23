@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Reference validator for prototype-based PGM Schema 0.4.0."""
+"""Reference validator for prototype-based PGM Schema 0.4.0 Public Draft."""
 
 from __future__ import annotations
 
@@ -13,10 +13,23 @@ from typing import Dict, FrozenSet, List, Optional, Set, Tuple
 HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE.parent / "parser"))
 
-from pgmark import Graph, parse_corpus  # noqa: E402
+from pgmark import Graph, PGM_VERSION_LABEL, parse_corpus  # noqa: E402
+from validation import OKF_COMMIT, OKF_SPEC_SHA256  # noqa: E402
 
 
 Signature = Tuple[str, Optional[str], str]
+PGM_SCHEMA_VERSION = "0.4.0"
+PGM_SCHEMA_STATUS = "Public Draft"
+PGM_SCHEMA_VERSION_LABEL = f"{PGM_SCHEMA_VERSION} {PGM_SCHEMA_STATUS}"
+
+
+@dataclass(frozen=True)
+class SchemaDiagnostic:
+    code: str
+    message: str
+
+    def render(self) -> str:
+        return f"error [{self.code}]: {self.message}"
 
 
 @dataclass(frozen=True)
@@ -30,7 +43,9 @@ def concept_documents(root: Path) -> Set[str]:
     return {
         path.relative_to(root).as_posix()[:-3]
         for path in root.rglob("*.md")
-        if path.name not in {"index.md", "log.md"}
+        if path.is_file()
+        and not path.is_symlink()
+        and path.name not in {"index.md", "log.md"}
     }
 
 
@@ -38,20 +53,36 @@ def relationship_type_name(value: Optional[str]) -> str:
     return value if value is not None else "<untyped>"
 
 
-def graph_errors(graph: Graph, scope: str) -> List[str]:
+def graph_errors(graph: Graph, scope: str) -> List[SchemaDiagnostic]:
     """Return core conformance errors without promoting PGM warnings."""
 
-    return [f"{scope}: {message}" for message in graph.errors]
+    return [
+        SchemaDiagnostic(diagnostic.code, f"{scope}: {diagnostic.display()}")
+        for diagnostic in graph.diagnostics
+        if diagnostic.severity == "error"
+    ]
 
 
-def load_schema(root: Path) -> Tuple[Optional[PrototypeSchema], List[str]]:
-    errors: List[str] = []
+def load_schema(
+    root: Path,
+) -> Tuple[Optional[PrototypeSchema], List[SchemaDiagnostic]]:
+    errors: List[SchemaDiagnostic] = []
     if not root.is_dir():
-        return None, [f"schema bundle does not exist or is not a directory: {root}"]
+        return None, [
+            SchemaDiagnostic(
+                "PGMS_SCHEMA_ROOT_INVALID",
+                f"schema bundle does not exist or is not a directory: {root}",
+            )
+        ]
 
     documents = concept_documents(root)
     if not documents:
-        return None, ["schema bundle requires at least one Prototype concept"]
+        return None, [
+            SchemaDiagnostic(
+                "PGMS_SCHEMA_EMPTY",
+                "schema bundle requires at least one Prototype concept",
+            )
+        ]
 
     graph = parse_corpus(root)
     errors.extend(graph_errors(graph, "schema"))
@@ -66,8 +97,11 @@ def load_schema(root: Path) -> Tuple[Optional[PrototypeSchema], List[str]]:
         actual_type = node.type if node else None
         if actual_type != "Prototype":
             errors.append(
-                f"schema:{document_id}: expected frontmatter type Prototype, "
-                f"found {actual_type or '<missing>'}"
+                SchemaDiagnostic(
+                    "PGMS_PROTOTYPE_REQUIRED",
+                    f"schema:{document_id}: expected frontmatter type Prototype, "
+                    f"found {actual_type or '<missing>'}",
+                )
             )
         attributes[type_name] = (
             frozenset(set(node.properties) - {"type"}) if node else frozenset()
@@ -81,18 +115,24 @@ def load_schema(root: Path) -> Tuple[Optional[PrototypeSchema], List[str]]:
         for relationship in node.relationships:
             if relationship.target not in documents:
                 errors.append(
-                    f"schema:{document_id}: prototype "
-                    f"{relationship_type_name(relationship.type)} target "
-                    f"{relationship.target} is not a Prototype concept in the schema bundle"
+                    SchemaDiagnostic(
+                        "PGMS_PROTOTYPE_TARGET_UNRESOLVED",
+                        f"schema:{document_id}: prototype "
+                        f"{relationship_type_name(relationship.type)} target "
+                        f"{relationship.target} is not a Prototype concept in the schema bundle",
+                    )
                 )
                 continue
             target_type = relationship.target
             signature = (source_type, relationship.type, target_type)
             if signature in relationships:
                 errors.append(
-                    "schema: duplicate prototype signature "
-                    f"{source_type} -[{relationship_type_name(relationship.type)}]-> "
-                    f"{target_type}"
+                    SchemaDiagnostic(
+                        "PGMS_DUPLICATE_SIGNATURE",
+                        "schema: duplicate prototype signature "
+                        f"{source_type} -[{relationship_type_name(relationship.type)}]-> "
+                        f"{target_type}",
+                    )
                 )
                 continue
             relationships[signature] = frozenset(
@@ -108,11 +148,16 @@ def load_schema(root: Path) -> Tuple[Optional[PrototypeSchema], List[str]]:
     ), []
 
 
-def validate_instance(root: Path, schema: PrototypeSchema) -> List[str]:
+def validate_instance(root: Path, schema: PrototypeSchema) -> List[SchemaDiagnostic]:
     if not root.is_dir():
-        return [f"instance bundle does not exist or is not a directory: {root}"]
+        return [
+            SchemaDiagnostic(
+                "PGMS_INSTANCE_ROOT_INVALID",
+                f"instance bundle does not exist or is not a directory: {root}",
+            )
+        ]
 
-    errors: List[str] = []
+    errors: List[SchemaDiagnostic] = []
     documents = concept_documents(root)
     graph = parse_corpus(root)
     errors.extend(graph_errors(graph, "instance"))
@@ -124,7 +169,10 @@ def validate_instance(root: Path, schema: PrototypeSchema) -> List[str]:
         instance_types[document_id] = type_name
         if type_name not in schema.types:
             errors.append(
-                f"instance:{document_id}: unknown Type {type_name or '<missing>'}"
+                SchemaDiagnostic(
+                    "PGMS_INSTANCE_TYPE_UNKNOWN",
+                    f"instance:{document_id}: unknown Type {type_name or '<missing>'}",
+                )
             )
             continue
         unexpected = sorted(
@@ -132,8 +180,11 @@ def validate_instance(root: Path, schema: PrototypeSchema) -> List[str]:
         )
         for key in unexpected:
             errors.append(
-                f"instance:{document_id}: attribute {key} is not declared by "
-                f"Type {type_name}"
+                SchemaDiagnostic(
+                    "PGMS_INSTANCE_ATTRIBUTE_UNDECLARED",
+                    f"instance:{document_id}: attribute {key} is not declared by "
+                    f"Type {type_name}",
+                )
             )
 
     for document_id in sorted(documents):
@@ -144,9 +195,12 @@ def validate_instance(root: Path, schema: PrototypeSchema) -> List[str]:
         for relationship in node.relationships:
             if relationship.target not in documents:
                 errors.append(
-                    f"instance:{document_id}: relationship "
-                    f"{relationship_type_name(relationship.type)} target "
-                    f"{relationship.target} is outside the validation scope"
+                    SchemaDiagnostic(
+                        "PGMS_INSTANCE_TARGET_OUT_OF_SCOPE",
+                        f"instance:{document_id}: relationship "
+                        f"{relationship_type_name(relationship.type)} target "
+                        f"{relationship.target} is outside the validation scope",
+                    )
                 )
                 continue
             target_type = instance_types.get(relationship.target)
@@ -156,19 +210,25 @@ def validate_instance(root: Path, schema: PrototypeSchema) -> List[str]:
             permitted = schema.relationships.get(signature)
             if permitted is None:
                 errors.append(
-                    f"instance:{document_id}: relationship signature "
-                    f"{source_type} -[{relationship_type_name(relationship.type)}]-> "
-                    f"{target_type} "
-                    "has no prototype"
+                    SchemaDiagnostic(
+                        "PGMS_INSTANCE_SIGNATURE_UNDECLARED",
+                        f"instance:{document_id}: relationship signature "
+                        f"{source_type} -[{relationship_type_name(relationship.type)}]-> "
+                        f"{target_type} "
+                        "has no prototype",
+                    )
                 )
                 continue
             for key in sorted(
                 set(relationship.properties) - {"type"} - set(permitted)
             ):
                 errors.append(
-                    f"instance:{document_id}: relationship property {key} is not "
-                    f"declared by prototype {source_type} "
-                    f"-[{relationship_type_name(relationship.type)}]-> {target_type}"
+                    SchemaDiagnostic(
+                        "PGMS_INSTANCE_PROPERTY_UNDECLARED",
+                        f"instance:{document_id}: relationship property {key} is not "
+                        f"declared by prototype {source_type} "
+                        f"-[{relationship_type_name(relationship.type)}]-> {target_type}",
+                    )
                 )
 
     return errors
@@ -176,7 +236,18 @@ def validate_instance(root: Path, schema: PrototypeSchema) -> List[str]:
 
 def main(argv: Optional[List[str]] = None) -> int:
     parser = argparse.ArgumentParser(
-        description="Validate a prototype-based PGM Schema bundle and optional instance bundle."
+        description=(
+            "Validate a prototype-based PGM Schema 0.4.0 Public Draft bundle "
+            "and optional instance bundle."
+        )
+    )
+    parser.add_argument(
+        "--version",
+        action="version",
+        version=(
+            f"PGM Schema {PGM_SCHEMA_VERSION_LABEL}; PGM {PGM_VERSION_LABEL}; "
+            f"OKF {OKF_COMMIT} ({OKF_SPEC_SHA256})"
+        ),
     )
     parser.add_argument("schema", nargs="?", help="schema Knowledge Bundle root")
     parser.add_argument("instance", nargs="?", help="instance Knowledge Bundle root")
@@ -196,11 +267,11 @@ def main(argv: Optional[List[str]] = None) -> int:
     if errors:
         print(f"PGM Schema validation failed with {len(errors)} error(s):", file=sys.stderr)
         for error in errors:
-            print(f"- {error}", file=sys.stderr)
+            print(error.render(), file=sys.stderr)
         return 1
 
     assert schema is not None
-    print("PGM Schema prototype bundle is valid.")
+    print(f"PGM Schema {PGM_SCHEMA_VERSION_LABEL} prototype bundle is valid.")
     print(f"Types: {len(schema.types)}")
     print(
         "Prototype attributes: "

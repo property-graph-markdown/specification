@@ -1,3 +1,4 @@
+import json
 import sys
 import tempfile
 import unittest
@@ -7,7 +8,14 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "parser"))
 
-from pgmark import graph_to_cypher, parse_corpus  # noqa: E402
+from canonical import canonical_document, canonical_json  # noqa: E402
+from pgmark import (  # noqa: E402
+    graph_to_cypher,
+    graph_to_data,
+    graph_to_json,
+    parse_corpus,
+)
+from validation import OKF_COMMIT, OKF_SPEC_SHA256, OKF_SPEC_URL  # noqa: E402
 
 
 def concept(node_type, body="", metadata=""):
@@ -47,7 +55,7 @@ class ParserTests(unittest.TestCase):
         node = graph.nodes["table"]
         self.assertEqual(node.type, "BigQuery Table")
         self.assertEqual(node.properties["type"], "BigQuery Table")
-        self.assertIn("MERGE (n0:`BigQuery Table`", graph_to_cypher(graph))
+        self.assertIn("SET n0.pgm_type = \"BigQuery Table\"", graph_to_cypher(graph))
 
     def test_nested_okf_metadata_is_preserved_as_node_properties(self):
         graph = self.parse_files(
@@ -68,7 +76,33 @@ class ParserTests(unittest.TestCase):
         self.assertEqual(properties["type"], "Reference")
         self.assertEqual(properties["generated"]["by"], "reference_agent/test")
         self.assertEqual(properties["sources"][0]["id"], "source-1")
-        self.assertIn("n0.generated = {by:", graph_to_cypher(graph))
+        encoded = canonical_json(properties)
+        decoded = json.loads(encoded)
+        self.assertEqual(decoded, canonical_document(properties))
+        self.assertIn('["string","reference_agent/test"]', encoded)
+        self.assertIn('["string","source-1"]', encoded)
+        self.assertIn("pgm_properties_json", graph_to_cypher(graph))
+
+    def test_yaml_is_parsed_as_yaml_1_2(self):
+        graph = self.parse_files(
+            {"note.md": concept("Reference", metadata="legacy_boolean: yes")}
+        )
+
+        self.assertEqual(graph.nodes["note"].properties["legacy_boolean"], "yes")
+
+    def test_okf_standard_reference_is_pinned_to_an_exact_commit(self):
+        self.assertRegex(OKF_COMMIT, r"^[0-9a-f]{40}$")
+        self.assertRegex(OKF_SPEC_SHA256, r"^[0-9a-f]{64}$")
+        self.assertIn(OKF_COMMIT, OKF_SPEC_URL)
+        self.assertNotIn("/main/", OKF_SPEC_URL)
+
+    def test_canonical_json_is_deterministic_and_parseable(self):
+        first = {"z": [1, None, {"b": True, "a": "text"}], "a": 2}
+        second = {"a": 2, "z": [1, None, {"a": "text", "b": True}]}
+
+        encoded = canonical_json(first)
+        self.assertEqual(encoded, canonical_json(second))
+        self.assertEqual(json.loads(encoded), canonical_document(second))
 
     def test_missing_frontmatter_is_validation_error(self):
         graph = self.parse_files({"note.md": "# Note\n"})
@@ -83,17 +117,39 @@ class ParserTests(unittest.TestCase):
 
         self.assertIn("requires a non-empty string 'type'", graph.errors[0])
 
+        whitespace = self.parse_files(
+            {"note.md": '---\ntype: " "\n---\n\n# Note\n'}
+        )
+        self.assertEqual(whitespace.errors, [])
+        self.assertEqual(whitespace.nodes["note"].type, " ")
+
     def test_okf_reserved_files_are_not_nodes(self):
         graph = self.parse_files(
             {
                 "index.md": "# Index\n",
-                "nested/log.md": "# Log\n",
+                "nested/log.md": "# Log\n\n## 2026-08-23\n- Update\n",
                 "note.md": concept("Note"),
             }
         )
 
         self.assertEqual(list(graph.nodes), ["note"])
         self.assertEqual(graph.errors, [])
+
+    def test_okf_reserved_document_structure_is_validated(self):
+        invalid_log = self.parse_files(
+            {"log.md": "# Log\n\n## August 23\n- Update\n"}
+        )
+        self.assertIn("date heading must use YYYY-MM-DD", invalid_log.errors[0])
+
+        invalid_index = self.parse_files(
+            {"nested/index.md": "---\nokf_version: '0.2'\n---\n\n# Index\n"}
+        )
+        self.assertIn("only the bundle-root index.md", invalid_index.errors[0])
+
+        valid_root_index = self.parse_files(
+            {"index.md": "---\nokf_version: '0.2'\n---\n\n# Index\n"}
+        )
+        self.assertEqual(valid_root_index.errors, [])
 
     def test_link_without_title_is_untyped_relationship(self):
         graph = self.parse_files(
@@ -153,7 +209,19 @@ class ParserTests(unittest.TestCase):
 
         self.assertEqual(graph.relationships[0].type, "works for")
         self.assertEqual(graph.relationships[0].properties["type"], "works for")
-        self.assertIn("[:`works for`]", graph_to_cypher(graph))
+        cypher = graph_to_cypher(graph)
+        self.assertIn(":PGM_RELATIONSHIP", cypher)
+        self.assertIn('pgm_type:"works for"', cypher)
+
+        whitespace = self.parse_files(
+            {
+                "alice.md": concept(
+                    "Person", "[Acme](Acme.md \"{type: ' '}\")\n"
+                )
+            }
+        )
+        self.assertEqual(whitespace.relationships[0].type, " ")
+        self.assertEqual(whitespace.warnings, [])
 
     def test_untyped_relationship_with_properties(self):
         graph = self.parse_files(
@@ -224,7 +292,7 @@ class ParserTests(unittest.TestCase):
         properties = graph.relationships[0].properties
         self.assertEqual(properties["type"], "supports")
         self.assertEqual(properties["status"], "stable")
-        self.assertEqual(properties["stale_after"].isoformat(), "2026-12-31")
+        self.assertEqual(properties["stale_after"], "2026-12-31")
         self.assertEqual(properties["generated"]["by"], "human:alice")
         self.assertEqual(properties["verified"][0]["by"], "human:bob")
         self.assertEqual(properties["sources"][0]["id"], "evidence-1")
@@ -289,8 +357,12 @@ class ParserTests(unittest.TestCase):
         self.assertEqual(properties["payload"], b"Hello")
         self.assertEqual(properties["flags"], {"one", "two"})
         self.assertEqual(graph.errors, [])
-        with self.assertRaisesRegex(ValueError, "cannot represent YAML value"):
-            graph_to_cypher(graph)
+        encoded = canonical_json(properties)
+        decoded = json.loads(encoded)
+        self.assertEqual(decoded, canonical_document(properties))
+        self.assertIn('["binary","SGVsbG8="]', encoded)
+        self.assertIn('["set",', encoded)
+        self.assertIn("pgm_properties_json", graph_to_cypher(graph))
 
     def test_non_string_outer_property_key_keeps_baseline_relationship(self):
         graph = self.parse_files(
@@ -299,9 +371,9 @@ class ParserTests(unittest.TestCase):
 
         self.assertEqual(len(graph.relationships), 1)
         self.assertEqual(graph.relationships[0].properties, {})
-        self.assertIn("property map keys must be strings", graph.warnings[0])
+        self.assertIn("Property map keys must be strings", graph.warnings[0])
 
-    def test_relative_and_absolute_bare_concept_links_coalesce(self):
+    def test_relative_and_absolute_links_preserve_occurrences_and_share_key(self):
         graph = self.parse_files(
             {
                 "people/alice.md": concept(
@@ -312,23 +384,33 @@ class ParserTests(unittest.TestCase):
             }
         )
 
-        self.assertEqual(len(graph.relationships), 1)
-        self.assertEqual(graph.relationships[0].target, "organizations/Acme")
+        self.assertEqual(len(graph.relationships), 2)
+        self.assertEqual(
+            [relationship.target for relationship in graph.relationships],
+            ["organizations/Acme", "organizations/Acme"],
+        )
+        self.assertEqual(len({relationship.key for relationship in graph.relationships}), 1)
+        self.assertEqual(
+            [relationship.occurrence for relationship in graph.relationships], [0, 1]
+        )
+        self.assertEqual(len({relationship.id for relationship in graph.relationships}), 2)
 
-    def test_fragment_only_link_targets_current_concept(self):
+    def test_fragment_only_link_is_navigation_not_relationship(self):
         graph = self.parse_files(
             {"ada.md": concept("Person", "[Biography](#biography)\n")}
         )
 
-        self.assertEqual(graph.relationships[0].target, "ada")
+        self.assertEqual(graph.relationships, [])
 
-    def test_broken_concept_link_creates_unresolved_target_node(self):
+    def test_broken_concept_link_keeps_dangling_target_without_node(self):
         graph = self.parse_files(
             {"ada.md": concept("Person", "[Future](future/Concept.md)\n")}
         )
 
         self.assertEqual(graph.relationships[0].target, "future/Concept")
-        self.assertIn("future/Concept", graph.nodes)
+        self.assertNotIn("future/Concept", graph.nodes)
+        serialized = graph_to_data(graph)
+        self.assertFalse(serialized["relationships"][0]["resolved"])
 
     def test_external_and_empty_links_have_no_pgm_relationship(self):
         graph = self.parse_files(
@@ -378,9 +460,9 @@ class ParserTests(unittest.TestCase):
 
         self.assertEqual(len(graph.relationships), 2)
         self.assertEqual(len({relationship.id for relationship in graph.relationships}), 2)
-        self.assertEqual(graph_to_cypher(graph).count("CREATE (n0)-[:visited"), 2)
+        self.assertEqual(graph_to_cypher(graph).count(":PGM_RELATIONSHIP "), 2)
 
-    def test_bare_and_empty_map_duplicates_coalesce_despite_label(self):
+    def test_bare_and_empty_map_are_distinct_occurrences_with_shared_key(self):
         graph = self.parse_files(
             {
                 "ada.md": concept(
@@ -391,7 +473,9 @@ class ParserTests(unittest.TestCase):
             }
         )
 
-        self.assertEqual(len(graph.relationships), 1)
+        self.assertEqual(len(graph.relationships), 2)
+        self.assertEqual(len({relationship.key for relationship in graph.relationships}), 1)
+        self.assertEqual(len({relationship.id for relationship in graph.relationships}), 2)
 
     def test_relationship_fingerprint_is_stable_under_yaml_key_reordering(self):
         first = self.parse_files(
@@ -427,18 +511,46 @@ class ParserTests(unittest.TestCase):
         self.assertEqual(graph.nodes["ada"].properties["type"], "Person")
         self.assertEqual(graph.relationships[0].properties["type"], "born_in")
         cypher = graph_to_cypher(graph)
-        self.assertIn('MERGE (n0:Person {id:"ada"})', cypher)
-        self.assertNotIn("n0.type", cypher)
-        self.assertIn("CREATE (n0)-[:born_in {", cypher)
-        self.assertNotIn('type: "born_in"', cypher)
+        self.assertIn(':PGMConcept {pgm_concept_id:"ada"}', cypher)
+        self.assertIn('SET n1.pgm_type = "Person"', cypher)
+        self.assertIn("pgm_relationship_id", cypher)
+        self.assertIn("pgm_relationship_key", cypher)
+        self.assertIn('pgm_type:"born_in"', cypher)
+        self.assertIn('\\"pgm-yaml\\"', cypher)
 
-    def test_cypher_export_reports_untyped_adapter_limitation(self):
+    def test_cypher_json_preserves_nested_values_null_and_authored_id(self):
+        graph = self.parse_files(
+            {
+                "note.md": concept(
+                    "Note",
+                    metadata=(
+                        "id: authored-id\n"
+                        "payload: {items: [1, text, null, {active: true}]}"
+                    ),
+                )
+            }
+        )
+
+        encoded = canonical_json(graph.nodes["note"].properties)
+        decoded = json.loads(encoded)
+        self.assertEqual(decoded, canonical_document(graph.nodes["note"].properties))
+        self.assertIn('["string","authored-id"]', encoded)
+        self.assertIn('["string","active"]', encoded)
+
+        cypher = graph_to_cypher(graph)
+        self.assertIn('{pgm_concept_id:"note"}', cypher)
+        self.assertIn('\\"string\\",\\"id\\"', cypher)
+        self.assertIn('\\"string\\",\\"authored-id\\"', cypher)
+        self.assertNotIn('{id:"note"}', cypher)
+
+    def test_cypher_generic_relationship_type_supports_untyped_relationship(self):
         graph = self.parse_files(
             {"ada.md": concept("Person", "[London](London.md)\n")}
         )
 
-        with self.assertRaisesRegex(ValueError, "requires a type"):
-            graph_to_cypher(graph)
+        cypher = graph_to_cypher(graph)
+        self.assertIn(":PGM_RELATIONSHIP", cypher)
+        self.assertNotIn("pgm_type:", cypher)
 
     def test_create_and_merge_export_modes(self):
         graph = self.parse_files(
@@ -449,11 +561,13 @@ class ParserTests(unittest.TestCase):
             }
         )
 
-        self.assertIn("CREATE (n0)-[:born_in", graph_to_cypher(graph))
+        self.assertIn("CREATE (", graph_to_cypher(graph))
+        self.assertIn(":PGM_RELATIONSHIP ", graph_to_cypher(graph))
         self.assertIn(
-            "MERGE (n0)-[:born_in",
+            "MERGE (",
             graph_to_cypher(graph, relationship_mode="merge"),
         )
+        self.assertIn("pgm_relationship_id", graph_to_cypher(graph, "merge"))
         with self.assertRaisesRegex(ValueError, "relationship mode"):
             graph_to_cypher(graph, relationship_mode="replace")
 

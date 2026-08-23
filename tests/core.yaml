@@ -1,96 +1,454 @@
+tckVersion: "1"
+pgmVersion: "0.4.0 Public Draft"
+
+# This manifest contains only UTF-8 Markdown source files and JSON-compatible
+# expected values. It is intentionally independent of the Python object model
+# and of the optional identification and exchange profiles.
 cases:
-  - name: OKF Concept becomes Node with complete Properties
-    markdown: |
-      ---
-      type: Person
-      name: Alice
-      age: 42
-      ---
-    conceptId: people/Alice
-    graphElementType: Person
-    nodeProperties: {type: Person, name: Alice, age: 42}
+  - id: yaml-core-node
+    description: YAML 1.2.2 Core Schema resolution and complete Node Properties
+    files:
+      people/Alice.md: |
+        ---
+        type: Person
+        name: Alice
+        legacyBoolean: yes
+        active: true
+        observed: 2026-08-23
+        nested: {items: [1, null]}
+        ---
 
-  - name: bare Concept Link is baseline Relationship
-    markdown: |
-      [Acme](Acme.md)
-    relationship:
-      type: null
-      properties: {}
+        # Alice
+    expect:
+      conforms: true
+      nodes:
+        - id: people/Alice
+          type: Person
+          properties:
+            type: Person
+            name: Alice
+            legacyBoolean: yes
+            active: true
+            observed: "2026-08-23"
+            nested: {items: [1, null]}
+      relationships: []
 
-  - name: untyped Relationship with Properties
-    markdown: |
-      [Acme](Acme.md "{since: 2024}")
-    relationship:
-      type: null
-      properties: {since: 2024}
+  - id: fundamental-relationship-occurrences
+    description: Every Concept Link occurrence is retained and only valid Flow Mapping titles supply Properties
+    files:
+      people/Alice.md: |
+        ---
+        type: Person
+        name: Alice
+        ---
 
-  - name: typed Relationship retains type Property
-    markdown: |
-      [Acme](Acme.md "{type: works_for}")
-    relationship:
-      type: works_for
-      properties: {type: works_for}
+        [bare](../organizations/Acme.md)
+        [ordinary](../organizations/Acme.md "Acme Corporation")
+        [empty](../organizations/Acme.md "{}")
+        [untyped properties](../organizations/Acme.md "{since: 2024}")
+        [typed](../organizations/Acme.md "{type: works_for}")
+        [typed properties](../organizations/Acme.md "{type: works_for, since: 2024}")
+      organizations/Acme.md: |
+        ---
+        type: Organization
+        name: Acme
+        ---
 
-  - name: typed Relationship with Properties
-    markdown: |
-      [Acme](Acme.md "{type: works_for, since: 2024}")
-    relationship:
-      type: works_for
-      properties: {type: works_for, since: 2024}
+        # Acme
+    expect:
+      conforms: true
+      nodes:
+        - id: organizations/Acme
+          type: Organization
+          properties: {type: Organization, name: Acme}
+        - id: people/Alice
+          type: Person
+          properties: {type: Person, name: Alice}
+      relationships:
+        - source: people/Alice
+          target: organizations/Acme
+          resolved: true
+          type: null
+          properties: {}
+        - source: people/Alice
+          target: organizations/Acme
+          resolved: true
+          type: null
+          properties: {}
+        - source: people/Alice
+          target: organizations/Acme
+          resolved: true
+          type: null
+          properties: {}
+        - source: people/Alice
+          target: organizations/Acme
+          resolved: true
+          type: null
+          properties: {since: 2024}
+        - source: people/Alice
+          target: organizations/Acme
+          resolved: true
+          type: works_for
+          properties: {type: works_for}
+        - source: people/Alice
+          target: organizations/Acme
+          resolved: true
+          type: works_for
+          properties: {type: works_for, since: 2024}
 
-  - name: ordinary Markdown title preserves baseline Relationship
-    markdown: |
-      [Acme](Acme.md "Acme Corporation")
-    relationship:
-      type: null
-      properties: {}
-      title: Acme Corporation
+  - id: destination-normalization
+    description: Path-bearing fragments resolve while navigation, queries, reserved and unsafe paths do not
+    files:
+      index.md: |
+        # Bundle index
 
-  - name: empty YAML Flow Map equals bare Relationship
-    markdown: |
-      [Acme](Acme.md "{}")
-    relationship:
-      type: null
-      properties: {}
+        - [Source](nested/source.md)
+        - [Ada Lovelace](people/Ada%20Lovelace.md)
+      nested/source.md: |
+        ---
+        type: Note
+        ---
 
-  - name: YAML scalar sequence and mapping values
-    markdown: |
-      [Acme](Acme.md "{type: works_for, text: hello, count: 2, ratio: 0.5, active: true, roles: [architect, developer], context: {team: graph}}")
-    relationshipProperties:
-      type: works_for
-      text: hello
-      count: 2
-      ratio: 0.5
-      active: true
-      roles: [architect, developer]
-      context: {team: graph}
+        [encoded](../people/Ada%20Lovelace.md#biography)
+        [absolute](/people/Ada%20Lovelace.md)
+        [local navigation](#details)
+        [query](../people/Ada%20Lovelace.md?view=full)
+        [reserved](../index.md)
+        [uppercase](../people/Ada.MD)
+        [escape](../../outside.md)
+        [encoded slash](../people/Ada%2FLovelace.md)
+        [external](https://example.com/target.md)
+        [empty]()
+      people/Ada Lovelace.md: |
+        ---
+        type: Person
+        ---
 
-  - name: invalid YAML Flow Map candidate is nonfatal
-    markdown: |
-      [Acme](Acme.md "{type:")
-    relationship:
-      type: null
-      properties: {}
-    warnings: true
+        # Ada Lovelace
+    expect:
+      conforms: true
+      nodes:
+        - id: nested/source
+          type: Note
+          properties: {type: Note}
+        - id: people/Ada Lovelace
+          type: Person
+          properties: {type: Person}
+      relationships:
+        - source: nested/source
+          target: people/Ada Lovelace
+          resolved: true
+          type: null
+          properties: {}
+        - source: nested/source
+          target: people/Ada Lovelace
+          resolved: true
+          type: null
+          properties: {}
 
-  - name: relative OKF Concept Link
-    source: people/Alice
-    markdown: |
-      [Acme](../organizations/Acme.md)
-    target: organizations/Acme
+  - id: broken-target
+    description: A broken Concept Link remains a Relationship without creating a Node
+    files:
+      source.md: |
+        ---
+        type: Note
+        ---
 
-  - name: absolute OKF Concept Link
-    source: people/Alice
-    markdown: |
-      [Acme](/organizations/Acme.md)
-    target: organizations/Acme
+        [future](future/Concept.md)
+    expect:
+      conforms: true
+      nodes:
+        - id: source
+          type: Note
+          properties: {type: Note}
+      relationships:
+        - source: source
+          target: future/Concept
+          resolved: false
+          type: null
+          properties: {}
 
-  - name: external Link is not a Concept Link
-    markdown: |
-      [website](https://example.com)
-    relationships: []
+  - id: malformed-relationship-annotation
+    description: A brace-leading invalid annotation preserves the baseline Relationship with empty Properties
+    files:
+      source.md: |
+        ---
+        type: Note
+        ---
 
-  - name: wikilink is outside the reference Markdown profile
-    markdown: |
-      [[Acme]]
-    relationships: []
+        [target](target.md "{type:")
+      target.md: |
+        ---
+        type: Note
+        ---
+    expect:
+      conforms: true
+      nodes:
+        - id: source
+          type: Note
+          properties: {type: Note}
+        - id: target
+          type: Note
+          properties: {type: Note}
+      relationships:
+        - source: source
+          target: target
+          resolved: true
+          type: null
+          properties: {}
+
+  - id: invalid-relationship-type
+    description: A non-string type is retained as data and leaves the Relationship untyped
+    files:
+      source.md: |
+        ---
+        type: Note
+        ---
+
+        [target](target.md "{type: 42, since: 2024}")
+      target.md: |
+        ---
+        type: Note
+        ---
+    expect:
+      conforms: true
+      nodes:
+        - id: source
+          type: Note
+          properties: {type: Note}
+        - id: target
+          type: Note
+          properties: {type: Note}
+      relationships:
+        - source: source
+          target: target
+          resolved: true
+          type: null
+          properties: {type: 42, since: 2024}
+
+  - id: non-string-relationship-property-key
+    description: A Flow Mapping with a non-string outer key is unusable enrichment
+    files:
+      source.md: |
+        ---
+        type: Note
+        ---
+
+        [target](target.md "{1: value}")
+      target.md: |
+        ---
+        type: Note
+        ---
+    expect:
+      conforms: true
+      nodes:
+        - id: source
+          type: Note
+          properties: {type: Note}
+        - id: target
+          type: Note
+          properties: {type: Note}
+      relationships:
+        - source: source
+          target: target
+          resolved: true
+          type: null
+          properties: {}
+
+  - id: yaml-core-relationship-values
+    description: Relationship values use the same YAML 1.2.2 Core Schema as frontmatter
+    files:
+      source.md: |
+        ---
+        type: Note
+        ---
+
+        [target](target.md "{type: observes, legacy: yes, enabled: true, observed: 2026-08-23, nested: {items: [1, null]}}")
+      target.md: |
+        ---
+        type: Note
+        ---
+    expect:
+      conforms: true
+      nodes:
+        - id: source
+          type: Note
+          properties: {type: Note}
+        - id: target
+          type: Note
+          properties: {type: Note}
+      relationships:
+        - source: source
+          target: target
+          resolved: true
+          type: observes
+          properties:
+            type: observes
+            legacy: yes
+            enabled: true
+            observed: "2026-08-23"
+            nested: {items: [1, null]}
+
+  - id: yaml-alias-dag
+    description: An acyclic YAML alias graph is expanded into equivalent Property values
+    files:
+      note.md: |
+        ---
+        type: Note
+        shared: &shared [one, two]
+        copy: *shared
+        ---
+    expect:
+      conforms: true
+      nodes:
+        - id: note
+          type: Note
+          properties:
+            type: Note
+            shared: [one, two]
+            copy: [one, two]
+      relationships: []
+
+  - id: yaml-alias-cycle
+    description: A cyclic YAML alias is a Core Bundle error
+    files:
+      bad.md: |
+        ---
+        type: Note
+        cycle: &cycle {self: *cycle}
+        ---
+    expect:
+      conforms: false
+
+  - id: missing-concept-frontmatter
+    description: A non-reserved Markdown document without frontmatter is not conforming
+    files:
+      bad.md: |
+        # Missing frontmatter
+    expect:
+      conforms: false
+
+  - id: duplicate-frontmatter-key
+    description: Duplicate YAML mapping keys are a Core Bundle error
+    files:
+      bad.md: |
+        ---
+        type: Note
+        type: Other
+        ---
+    expect:
+      conforms: false
+
+  - id: unsupported-frontmatter-tag
+    description: An unsupported YAML tag is rejected without constructing native objects
+    files:
+      bad.md: |
+        ---
+        type: Note
+        value: !application/object payload
+        ---
+    expect:
+      conforms: false
+
+  - id: invalid-log-order
+    description: Reserved log date headings are newest first
+    files:
+      log.md: |
+        # Updates
+
+        ## 2026-01-01
+        - Older
+
+        ## 2026-02-01
+        - Newer
+    expect:
+      conforms: false
+
+  - id: commonmark-reference-link
+    description: A CommonMark reference-style Concept Link has the same PGM semantics
+    files:
+      source.md: |
+        ---
+        type: Note
+        ---
+
+        [target][concept]
+
+        [concept]: target.md "{type: cites}"
+      target.md: |
+        ---
+        type: Note
+        ---
+    expect:
+      conforms: true
+      nodes:
+        - id: source
+          type: Note
+          properties: {type: Note}
+        - id: target
+          type: Note
+          properties: {type: Note}
+      relationships:
+        - source: source
+          target: target
+          resolved: true
+          type: cites
+          properties: {type: cites}
+
+  - id: unicode-title-whitespace-is-ordinary
+    description: Only YAML separation characters, not NBSP, expose Relationship Properties
+    files:
+      source.md: |
+        ---
+        type: Note
+        ---
+
+        [target](target.md "&nbsp;{type: hidden}&nbsp;")
+      target.md: |
+        ---
+        type: Note
+        ---
+    expect:
+      conforms: true
+      nodes:
+        - id: source
+          type: Note
+          properties: {type: Note}
+        - id: target
+          type: Note
+          properties: {type: Note}
+      relationships:
+        - source: source
+          target: target
+          resolved: true
+          type: null
+          properties: {}
+
+  - id: empty-index-has-no-section
+    description: A present OKF index requires at least one section heading
+    files:
+      index.md: ""
+    expect:
+      conforms: false
+
+  - id: timestamp-precision-outside-portable-profile
+    description: Explicit timestamps with more than six fractional digits are not portable PGM values
+    files:
+      bad.md: |
+        ---
+        type: Note
+        at: !!timestamp 2026-08-23T10:30:00.1234567Z
+        ---
+    expect:
+      conforms: false
+
+  - id: duplicate-set-member-by-pgm-identity
+    description: Numerically equal YAML Set members are duplicate PGM values
+    files:
+      bad.md: |
+        ---
+        type: Note
+        values: !!set {1, 1.0}
+        ---
+    expect:
+      conforms: false

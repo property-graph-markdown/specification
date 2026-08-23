@@ -1,0 +1,45 @@
+MERGE (n0:PGMConcept {pgm_concept_id:"future/Partner"})
+ON CREATE SET n0.pgm_resolved = false
+MERGE (n1:PGMConcept {pgm_concept_id:"organizations/Acme"})
+SET n1.pgm_resolved = true
+SET n1.pgm_type = "Organization"
+SET n1.pgm_properties_json = "[\"pgm-yaml\",\"v1\",[\"mapping\",[[[\"string\",\"name\"],[\"string\",\"Acme Corporation\"]],[[\"string\",\"type\"],[\"string\",\"Organization\"]]]]]"
+MERGE (n2:PGMConcept {pgm_concept_id:"people/Alice"})
+SET n2.pgm_resolved = true
+SET n2.pgm_type = "Person"
+SET n2.pgm_properties_json = "[\"pgm-yaml\",\"v1\",[\"mapping\",[[[\"string\",\"joined_on\"],[\"string\",\"2024-01-15\"]],[[\"string\",\"name\"],[\"string\",\"Alice\"]],[[\"string\",\"type\"],[\"string\",\"Person\"]]]]]"
+MERGE (n2)-[r0:PGM_RELATIONSHIP {pgm_relationship_id:"pgmrel:v1:sha256:990fcab63bdb3b5db0079d7e66d8597043875b47a5ceac127017bc5248f17196"}]->(n0)
+SET r0.pgm_relationship_key = "pgmkey:v1:sha256:07f901c01837c84ae0cac4bf90e9ee4720630d27f3b1ee22e51cb867c3575247"
+SET r0.pgm_occurrence = 0
+SET r0.pgm_properties_json = "[\"pgm-yaml\",\"v1\",[\"mapping\",[[[\"string\",\"type\"],[\"string\",\"considers\"]]]]]"
+SET r0.pgm_type = "considers"
+MERGE (n2)-[r1:PGM_RELATIONSHIP {pgm_relationship_id:"pgmrel:v1:sha256:6318ac99547f34bcf7d4a07d133e68738c5f42d25a0b861a9c80597aeb041fed"}]->(n1)
+SET r1.pgm_relationship_key = "pgmkey:v1:sha256:0bda439c04c78d9ed99b1ed3d74ddb6f0760220c4560185685bde3d480ee8510"
+SET r1.pgm_occurrence = 0
+SET r1.pgm_properties_json = "[\"pgm-yaml\",\"v1\",[\"mapping\",[[[\"string\",\"since\"],[\"number\",\"2024\"]],[[\"string\",\"type\"],[\"string\",\"works_for\"]]]]]"
+SET r1.pgm_type = "works_for"
+MERGE (n2)-[r2:PGM_RELATIONSHIP {pgm_relationship_id:"pgmrel:v1:sha256:8aa5f576ab2af4a76db0b48986e3270c65e8fdf7a0e9c37ef6554164af412c60"}]->(n1)
+SET r2.pgm_relationship_key = "pgmkey:v1:sha256:433a9890ca8b3b711bce26c8eb51d9c43432e39218a15480adec2b028dec1da0"
+SET r2.pgm_occurrence = 0
+SET r2.pgm_properties_json = "[\"pgm-yaml\",\"v1\",[\"mapping\",[[[\"string\",\"since\"],[\"number\",\"2024\"]]]]]"
+MERGE (n2)-[r3:PGM_RELATIONSHIP {pgm_relationship_id:"pgmrel:v1:sha256:8cc7d9c942ff6fb7ba019aa85863e804e03bf191ef35c38144a335e0f79bab55"}]->(n1)
+SET r3.pgm_relationship_key = "pgmkey:v1:sha256:752cd77e80b7c1964dcef926db001bf29c8d94b08fcd840f35f94fa6cfc88002"
+SET r3.pgm_occurrence = 0
+SET r3.pgm_properties_json = "[\"pgm-yaml\",\"v1\",[\"mapping\",[]]]"
+MERGE (n2)-[r4:PGM_RELATIONSHIP {pgm_relationship_id:"pgmrel:v1:sha256:a3d55bd730bc54f328001d1aaa811c8c04edd5efcc9631adacb067e28fe5207e"}]->(n1)
+SET r4.pgm_relationship_key = "pgmkey:v1:sha256:752cd77e80b7c1964dcef926db001bf29c8d94b08fcd840f35f94fa6cfc88002"
+SET r4.pgm_occurrence = 1
+SET r4.pgm_properties_json = "[\"pgm-yaml\",\"v1\",[\"mapping\",[]]]"
+MERGE (n2)-[r5:PGM_RELATIONSHIP {pgm_relationship_id:"pgmrel:v1:sha256:281cc1fc4b78ffeeee8d69333c7a2b82ce188a5111c378a4cb3a7de23ce7eaad"}]->(n1)
+SET r5.pgm_relationship_key = "pgmkey:v1:sha256:752cd77e80b7c1964dcef926db001bf29c8d94b08fcd840f35f94fa6cfc88002"
+SET r5.pgm_occurrence = 2
+SET r5.pgm_properties_json = "[\"pgm-yaml\",\"v1\",[\"mapping\",[]]]"
+MERGE (n2)-[r6:PGM_RELATIONSHIP {pgm_relationship_id:"pgmrel:v1:sha256:e010867bd00f8a62a191d33afc77a2ab4c8a53c0423f4ab82b470ce99ca67cef"}]->(n1)
+SET r6.pgm_relationship_key = "pgmkey:v1:sha256:752cd77e80b7c1964dcef926db001bf29c8d94b08fcd840f35f94fa6cfc88002"
+SET r6.pgm_occurrence = 3
+SET r6.pgm_properties_json = "[\"pgm-yaml\",\"v1\",[\"mapping\",[]]]"
+MERGE (n2)-[r7:PGM_RELATIONSHIP {pgm_relationship_id:"pgmrel:v1:sha256:0be9f480b7e9f3f014ce48f0df76c3bfdb7c8ffa24441482221b1539bd63f9f8"}]->(n1)
+SET r7.pgm_relationship_key = "pgmkey:v1:sha256:83213a76d9832cca7ccf828212078bcee041a78459fe7a25ce3d2a8dc574054c"
+SET r7.pgm_occurrence = 0
+SET r7.pgm_properties_json = "[\"pgm-yaml\",\"v1\",[\"mapping\",[[[\"string\",\"type\"],[\"string\",\"works_for\"]]]]]"
+SET r7.pgm_type = "works_for"

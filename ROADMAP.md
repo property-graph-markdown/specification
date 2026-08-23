@@ -29,9 +29,11 @@ Phase 1 combines:
 
 PGM 0.4.0 belongs to Phase 1 and defines the smallest useful core:
 
-- the core specification
-- the reference parser
-- the Obsidian plugin
+- the PGM Core specification;
+- the reference parser and validator;
+- a Demo Vault;
+- the versioned JSON round-trip exchange profile; and
+- the reference Cypher projection.
 
 The Phase 1 goal is interoperability around a monotonic property-graph
 interpretation of OKF Concepts and all OKF Concept Links. Optional YAML Flow
@@ -136,6 +138,7 @@ PGM 0.4.0 does not define:
 - a graph database
 - a query language
 - a custom renderer
+- an editor plugin
 - a synchronization protocol
 - an information graph
 - an ontology graph

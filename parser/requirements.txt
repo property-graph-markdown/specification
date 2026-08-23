@@ -1,2 +1,4 @@
-markdown-it-py>=3.0.0
-PyYAML>=6.0.0
+# Runtime dependency ranges for supported CPython 3.10 through 3.14.
+markdown-it-py>=4.0.0,<5
+ruamel.yaml>=0.18.6,<0.19
+jsonschema>=4.23.0,<5

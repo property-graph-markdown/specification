@@ -1,0 +1,24 @@
+# Direct dependency baseline used to validate PGM 0.4.0 Public Draft releases
+# on supported CPython 3.10 through 3.14.
+# Runtime compatibility remains defined by requirements.txt and pyproject.toml;
+# update this file deliberately after the full CI matrix passes.
+markdown-it-py==4.2.0
+ruamel.yaml==0.18.17
+jsonschema==4.25.1
+
+# Transitive versions exercised by the release matrix. Keeping them here makes
+# a release candidate reproducible while still allowing normal users to rely on
+# the compatible ranges declared by the project.
+mdurl==0.1.2
+ruamel.yaml.clib==0.2.15
+attrs==23.2.0
+jsonschema-specifications==2025.9.1
+referencing==0.37.0
+rpds-py==0.28.0
+typing-extensions==4.16.0
+
+# Release build frontend and its transitive dependencies. The PEP 517 backend
+# is pinned separately in pyproject.toml and installed in build isolation.
+build==1.2.2.post1
+packaging==26.3
+pyproject-hooks==1.2.0

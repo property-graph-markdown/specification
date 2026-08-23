@@ -3,7 +3,8 @@
 ## 1. Scope
 
 PGM Schema is a prototype-based schema profile for OKF Knowledge Bundles with
-Property Graph Markdown (PGM) relationships.
+Property Graph Markdown (PGM) relationships. This document is a Public Draft;
+implementations should expect clarifications before a final release.
 
 PGM Schema adds no syntax. It gives schema meaning to ordinary OKF concepts
 whose frontmatter has exactly this modeling-role marker:
@@ -27,7 +28,19 @@ interpreted as described in RFC 2119.
 
 ## 2. Normative bases
 
-A PGM Schema bundle SHALL conform to OKF 0.2 and PGM 0.4.0.
+A PGM Schema bundle SHALL conform to **PGM 0.4.0 Public Draft**, as specified by
+the repository's [`SPEC.md`](../SPEC.md). It consequently SHALL conform to the
+PGM draft's pinned normative OKF 0.2 source:
+
+- repository `GoogleCloudPlatform/knowledge-catalog`;
+- commit `3fcbb9f828c2f23d109c855ee403c3a4c81f3a96`;
+- document
+  [`okf/SPEC.md`](https://github.com/GoogleCloudPlatform/knowledge-catalog/blob/3fcbb9f828c2f23d109c855ee403c3a4c81f3a96/okf/SPEC.md); and
+- document SHA-256
+  `5a3311d270bebb16d558010e75064f5b75323f284992641732b1c8097511f948`.
+
+A conformance claim SHALL NOT substitute a moving OKF branch or a different PGM
+revision for these normative bases.
 
 OKF defines Knowledge Bundles, concept documents, Concept IDs, YAML
 frontmatter, reserved `index.md` and `log.md` documents, and Concept Links.
@@ -153,8 +166,10 @@ them.
 
 ### 5.4 Relationship prototypes
 
-Every PGM Relationship authored in a Prototype concept declares one permitted
-relationship signature.
+Every PGM Relationship occurrence authored in a Prototype concept declares one
+permitted relationship signature. Core PGM preserves every Concept Link
+occurrence; PGM Schema does not coalesce, delete, or otherwise replace those
+Core occurrences.
 
 For a Concept Link in Prototype concept `s`:
 
@@ -181,10 +196,17 @@ The same Relationship Type MAY occur on several Source Types and MAY point to
 several Target Types. Source and Target constraints are implicit in the
 prototype link; no domain or range declarations exist.
 
-After PGM semantic-key coalescing, a conforming schema SHALL contain at most
-one prototype relationship for a given
-`(sourceType, relationshipType, targetType)` signature. Authors SHALL combine
-all permitted relationship-property keys into that one relationship.
+A conforming schema SHALL contain exactly zero or one prototype Relationship
+occurrence for a given `(sourceType, relationshipType, targetType)` signature.
+Two occurrences with the same signature are a **PGM Schema duplicate-signature
+error**, even when their complete PGM Property maps differ and therefore have
+different portable PGM Relationship keys. Authors SHALL combine all permitted
+relationship-property keys into one prototype occurrence.
+
+This is a schema-profile uniqueness constraint, not a Core PGM identity or
+coalescing rule. Instance bundles MAY contain any number of Relationship
+occurrences matching the same permitted signature; every occurrence is
+validated independently and remains present in the Core PGM result.
 
 An unannotated Concept Link or a Concept Link with an ordinary title prototypes
 an untyped Relationship without data Properties. A Flow Mapping title without
@@ -222,9 +244,10 @@ equal prototype example values and need not have the same YAML value shape.
 
 ### 6.3 Relationships
 
-Every PGM relationship target SHALL resolve to an instance concept within the
-validation scope. For every instance relationship `e`, this signature SHALL
-exist in `R`:
+Every PGM Relationship occurrence target SHALL resolve to an instance concept
+within the validation scope. This is an additional PGM Schema constraint;
+unresolved targets remain valid in Core PGM. For every instance relationship
+occurrence `e`, this signature SHALL exist in `R`:
 
 ```text
 (
@@ -262,8 +285,8 @@ relationship properties are optional, and their values are unconstrained.
 This specification defines three conformance classes:
 
 - A **schema bundle** conforms when every concept is a valid `Prototype`
-  concept and every prototype relationship resolves unambiguously inside the
-  bundle.
+  concept, every prototype Relationship occurrence resolves unambiguously
+  inside the bundle, and no two occurrences declare the same schema signature.
 - An **instance bundle** conforms relative to one conforming schema bundle
   when all of its graph structure matches the prototypes.
 - A **PGM Schema processor** conforms when it applies the deterministic
@@ -284,14 +307,43 @@ A conforming processor SHALL:
 6. derive `A` from all frontmatter keys except `type`;
 7. resolve every PGM prototype Relationship, including ordinary Concept Links,
    to a Prototype concept in the same bundle;
-8. derive `R` and `P` from the resolved prototype links and reject duplicate
-   signatures;
+8. preserve every Core Relationship occurrence, derive `R` and `P` from the
+   resolved prototype links, and reject two or more prototype occurrences with
+   the same schema signature independently of their PGM semantic keys;
 9. when an instance bundle is supplied, validate its node Types, attributes,
    relationship signatures, targets, and relationship-property keys; and
 10. report conformance only when no error remains.
 
 A processor SHOULD report the source Concept ID, offending key or
 relationship signature, and expected prototype in each diagnostic.
+
+### 8.1 Stable diagnostics and reference CLI exits
+
+A machine-consumable PGM Schema diagnostic SHOULD expose a stable code
+independently of its human-readable text. The reference validator uses these
+PGM-Schema-specific codes:
+
+| Code | Condition |
+| --- | --- |
+| `PGMS_SCHEMA_ROOT_INVALID` | Schema root is not a directory. |
+| `PGMS_SCHEMA_EMPTY` | Schema bundle has no Prototype concept candidate. |
+| `PGMS_PROTOTYPE_REQUIRED` | A schema concept does not use `type: Prototype`. |
+| `PGMS_PROTOTYPE_TARGET_UNRESOLVED` | A prototype target is outside the schema bundle. |
+| `PGMS_DUPLICATE_SIGNATURE` | Two prototype occurrences declare one signature. |
+| `PGMS_INSTANCE_ROOT_INVALID` | Instance root is not a directory. |
+| `PGMS_INSTANCE_TYPE_UNKNOWN` | An instance names no schema Type. |
+| `PGMS_INSTANCE_ATTRIBUTE_UNDECLARED` | A Node attribute is not prototyped. |
+| `PGMS_INSTANCE_TARGET_OUT_OF_SCOPE` | An instance Relationship target is outside scope. |
+| `PGMS_INSTANCE_SIGNATURE_UNDECLARED` | A Relationship signature is not prototyped. |
+| `PGMS_INSTANCE_PROPERTY_UNDECLARED` | A Relationship Property is not prototyped. |
+
+Diagnostics inherited from PGM Core retain their PGM or OKF diagnostic codes.
+Diagnostic prose is informative and MAY be localized.
+
+The reference `validate.py` command and the `validate.mjs` wrapper use exit
+status `0` for conformance, `1` for validation failure, and `2` for invalid
+command-line invocation. These exit statuses specify the bundled CLI contract,
+not an API requirement for other processors.
 
 ## 9. Canonical authoring pattern
 
@@ -344,8 +396,10 @@ separately and SHALL NOT change a PGM Schema 0.4.0 conformance result silently.
 
 A reproducible conformance result SHOULD identify:
 
-- OKF version `0.2`;
-- PGM version `0.4.0`;
-- PGM Schema version `0.4.0`;
+- OKF version `0.2`, commit
+  `3fcbb9f828c2f23d109c855ee403c3a4c81f3a96`, and document SHA-256
+  `5a3311d270bebb16d558010e75064f5b75323f284992641732b1c8097511f948`;
+- PGM version and status `0.4.0 Public Draft`;
+- PGM Schema version and status `0.4.0 Public Draft`;
 - the schema-bundle root and exact Type Concept IDs; and
 - the instance-bundle root and exact validation scope, if supplied.

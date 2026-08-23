@@ -1,0 +1,135 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:pgm:tck:core:v1",
+  "title": "Property Graph Markdown Core TCK manifest",
+  "type": "object",
+  "required": ["tckVersion", "pgmVersion", "cases"],
+  "properties": {
+    "tckVersion": {
+      "const": "1"
+    },
+    "pgmVersion": {
+      "const": "0.4.0 Public Draft"
+    },
+    "cases": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "$ref": "#/$defs/case"
+      }
+    }
+  },
+  "additionalProperties": false,
+  "$defs": {
+    "jsonValue": {
+      "type": ["null", "boolean", "number", "string", "array", "object"],
+      "items": {
+        "$ref": "#/$defs/jsonValue"
+      },
+      "additionalProperties": {
+        "$ref": "#/$defs/jsonValue"
+      }
+    },
+    "case": {
+      "type": "object",
+      "required": ["id", "description", "files", "expect"],
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$"
+        },
+        "description": {
+          "type": "string",
+          "minLength": 1
+        },
+        "files": {
+          "type": "object",
+          "minProperties": 1,
+          "propertyNames": {
+            "pattern": "^(?!/)(?!.*(?:^|/)\\.\\.(?:/|$))[^\\u0000]+\\.md$"
+          },
+          "additionalProperties": {
+            "type": "string"
+          }
+        },
+        "expect": {
+          "oneOf": [
+            {"$ref": "#/$defs/conformingExpectation"},
+            {"$ref": "#/$defs/nonconformingExpectation"}
+          ]
+        }
+      },
+      "additionalProperties": false
+    },
+    "conformingExpectation": {
+      "type": "object",
+      "required": ["conforms", "nodes", "relationships"],
+      "properties": {
+        "conforms": {
+          "const": true
+        },
+        "nodes": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/node"
+          }
+        },
+        "relationships": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/relationship"
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    "nonconformingExpectation": {
+      "type": "object",
+      "required": ["conforms"],
+      "properties": {
+        "conforms": {
+          "const": false
+        }
+      },
+      "additionalProperties": false
+    },
+    "node": {
+      "type": "object",
+      "required": ["id", "type", "properties"],
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "type": {
+          "type": ["string", "null"]
+        },
+        "properties": {
+          "$ref": "#/$defs/jsonValue"
+        }
+      },
+      "additionalProperties": false
+    },
+    "relationship": {
+      "type": "object",
+      "required": ["source", "target", "resolved", "type", "properties"],
+      "properties": {
+        "source": {
+          "type": "string"
+        },
+        "target": {
+          "type": "string"
+        },
+        "resolved": {
+          "type": "boolean"
+        },
+        "type": {
+          "type": ["string", "null"]
+        },
+        "properties": {
+          "$ref": "#/$defs/jsonValue"
+        }
+      },
+      "additionalProperties": false
+    }
+  }
+}

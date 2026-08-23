@@ -1,7 +1,10 @@
 # PGM Schema
 
-PGM Schema is prototype modeling for OKF Knowledge Bundles with PGM
-relationships.
+PGM Schema 0.4.0 Public Draft is prototype modeling for OKF Knowledge Bundles
+with PGM Relationships. Its normative Core basis is
+[PGM 0.4.0 Public Draft](../SPEC.md), including OKF 0.2 at pinned commit
+`3fcbb9f828c2f23d109c855ee403c3a4c81f3a96` and specification SHA-256
+`5a3311d270bebb16d558010e75064f5b75323f284992641732b1c8097511f948`.
 
 The whole model is one rule:
 
@@ -82,6 +85,14 @@ Relationship Type. PGM Schema uses `type` structurally and checks the remaining
 keys as permitted data Properties without removing `type` from the core PGM
 model.
 
+Core PGM preserves every Concept Link occurrence. PGM Schema adds one
+schema-specific rule: a schema bundle may contain at most one prototype
+occurrence for the same `(Source Type, Relationship Type, Target Type)`
+signature. A second occurrence is a `PGMS_DUPLICATE_SIGNATURE` error even when
+its Properties—and therefore its portable PGM Relationship key—differ. This is
+not Core coalescing. Instance bundles may contain multiple occurrences of one
+permitted signature; the validator checks and preserves each one.
+
 ## Files
 
 - [SPEC.md](SPEC.md) is the normative PGM Schema 0.4.0 Public Draft.
@@ -118,4 +129,14 @@ node validate.mjs /path/to/schema-bundle /path/to/instance-bundle
 ```
 
 The Python dependencies of the PGM reference parser are required; install
-them from `../parser/requirements.txt`.
+them from `../parser/requirements.txt`. PGM Schema reuses the same thin local
+OKF adapter and therefore adds no `reference-agent` runtime dependency.
+
+The validator emits stable codes in the form `error [CODE]: message`. Human
+prose may change without changing the condition. Exit statuses are:
+
+- `0`: schema and optional instance conform;
+- `1`: validation failed;
+- `2`: invalid command-line invocation.
+
+The JavaScript wrapper propagates the Python validator's exit status unchanged.

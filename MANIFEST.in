@@ -1,0 +1,19 @@
+include CHANGELOG.md
+include CONTRIBUTING.md
+include RATIONALE.md
+include README.md
+include RELEASING.md
+include ROADMAP.md
+include SPEC.md
+
+recursive-include demo *.cypher *.json *.md
+recursive-include examples *.cypher *.md
+recursive-include interop *.json
+recursive-include parser *.md *.txt
+include pgm-schema/*.json
+include pgm-schema/*.md
+include pgm-schema/*.mjs
+include pgm-schema/*.py
+recursive-include pgm-schema/example-graph *.md
+recursive-include pgm-schema/example-schema *.md
+recursive-include tests *.json *.md *.py *.yaml

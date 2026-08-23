@@ -1,0 +1,157 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  core:
+    name: Core (Python ${{ matrix.python-version }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.10", "3.11", "3.12", "3.13", "3.14"]
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+
+      - name: Set up Python
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7
+        with:
+          python-version: ${{ matrix.python-version }}
+          cache: pip
+          cache-dependency-path: |
+            pyproject.toml
+            parser/constraints.txt
+
+      - name: Install reference parser
+        run: python -m pip install --constraint parser/constraints.txt --editable .
+
+      - name: Run core tests
+        run: python -m unittest discover -s tests -v
+
+      - name: Validate demo bundle
+        run: pgmark validate demo/bundle
+
+      - name: Verify JSON exchange snapshot
+        run: |
+          pgmark parse demo/bundle --format json > actual.graph.json
+          diff -u demo/expected.graph.json actual.graph.json
+
+      - name: Verify JSON import round-trip
+        run: |
+          pgmark import-json demo/expected.graph.json --format json > reexported.graph.json
+          diff -u demo/expected.graph.json reexported.graph.json
+
+      - name: Verify Cypher projection after JSON import
+        run: |
+          pgmark import-json demo/expected.graph.json --format cypher > imported.cypher
+          diff -u demo/expected.cypher imported.cypher
+
+      - name: Verify CREATE Cypher snapshot
+        run: |
+          pgmark parse demo/bundle --format cypher > actual.cypher
+          diff -u demo/expected.cypher actual.cypher
+
+      - name: Verify MERGE Cypher snapshot
+        run: |
+          pgmark parse demo/bundle --format cypher --relationship-mode merge > actual-merge.cypher
+          diff -u demo/expected-merge.cypher actual-merge.cypher
+
+  schema:
+    name: PGM Schema (Node ${{ matrix.node-version }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        node-version: ["20", "22", "24"]
+    env:
+      NO_UPDATE_NOTIFIER: "1"
+      PYTHON: python
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+
+      - name: Set up Python
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: |
+            pyproject.toml
+            parser/constraints.txt
+
+      - name: Set up Node.js
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7
+        with:
+          node-version: ${{ matrix.node-version }}
+
+      - name: Install reference parser
+        run: python -m pip install --constraint parser/constraints.txt --editable .
+
+      - name: Run PGM Schema tests
+        working-directory: pgm-schema
+        run: npm test
+
+      - name: Validate bundled schema and instance
+        working-directory: pgm-schema
+        run: npm run validate
+
+  quality:
+    name: Repository quality
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          fetch-depth: 2
+
+      - name: Set up Python
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7
+        with:
+          python-version: "3.12"
+
+      - name: Reject whitespace errors
+        run: git diff --check HEAD^
+
+      - name: Verify release metadata is parseable
+        run: |
+          python - <<'PY'
+          import json
+          import re
+          import tomllib
+
+          with open("pyproject.toml", "rb") as stream:
+              project = tomllib.load(stream)["project"]
+          with open("pgm-schema/package.json", encoding="utf-8") as stream:
+              schema_version = json.load(stream)["version"]
+          with open("parser/pgmark.py", encoding="utf-8") as stream:
+              processor_source = stream.read()
+
+          package_match = re.fullmatch(r"0\.4\.0a([1-9][0-9]*)", project["version"])
+          schema_match = re.fullmatch(
+              r"0\.4\.0-public-draft\.([1-9][0-9]*)", schema_version
+          )
+          processor_match = re.search(
+              r'^PROCESSOR_VERSION = "([^"]+)"$', processor_source, re.MULTILINE
+          )
+          assert package_match, "Python version must be 0.4.0aN with N >= 1"
+          assert schema_match, "PGM Schema version must be 0.4.0-public-draft.N"
+          assert processor_match, "parser must declare PROCESSOR_VERSION"
+          assert processor_match.group(1) == project["version"], (
+              "processor and Python package versions differ"
+          )
+          assert package_match.group(1) == schema_match.group(1), (
+              "Python and PGM Schema draft sequence numbers differ"
+          )
+          assert project["requires-python"] == ">=3.10,<3.15"
+          PY

@@ -1,0 +1,167 @@
+name: Public Draft Release
+
+on:
+  push:
+    tags:
+      - "v0.4.0-public-draft.*"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  verify-and-package:
+    name: Verify and package public draft
+    runs-on: ubuntu-latest
+    env:
+      NO_UPDATE_NOTIFIER: "1"
+      PYTHON: python
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: |
+            pyproject.toml
+            parser/constraints.txt
+
+      - name: Set up Node.js
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7
+        with:
+          node-version: "22"
+
+      - name: Validate release tag and package versions
+        id: release-version
+        run: |
+          python - <<'PY'
+          import json
+          import os
+          import re
+          import tomllib
+
+          with open("pyproject.toml", "rb") as stream:
+              package_version = tomllib.load(stream)["project"]["version"]
+          with open("pgm-schema/package.json", encoding="utf-8") as stream:
+              schema_version = json.load(stream)["version"]
+          with open("parser/pgmark.py", encoding="utf-8") as stream:
+              processor_source = stream.read()
+
+          package_match = re.fullmatch(r"0\.4\.0a([1-9][0-9]*)", package_version)
+          schema_match = re.fullmatch(
+              r"0\.4\.0-public-draft\.([1-9][0-9]*)", schema_version
+          )
+          processor_match = re.search(
+              r'^PROCESSOR_VERSION = "([^"]+)"$', processor_source, re.MULTILINE
+          )
+          assert package_match, "Python version must be 0.4.0aN with N >= 1"
+          assert schema_match, "PGM Schema version must be 0.4.0-public-draft.N"
+          assert processor_match, "parser must declare PROCESSOR_VERSION"
+          assert processor_match.group(1) == package_version, (
+              "processor and Python package versions differ"
+          )
+          sequence = package_match.group(1)
+          assert schema_match.group(1) == sequence, (
+              "Python and PGM Schema draft sequence numbers differ"
+          )
+
+          if os.environ.get("GITHUB_REF_TYPE") == "tag":
+              tag_match = re.fullmatch(
+                  r"v0\.4\.0-public-draft\.([1-9][0-9]*)",
+                  os.environ["GITHUB_REF_NAME"],
+              )
+              assert tag_match, "release tag must be v0.4.0-public-draft.N"
+              assert tag_match.group(1) == sequence, (
+                  f"tag {os.environ['GITHUB_REF_NAME']!r} requires Python "
+                  f"version 0.4.0a{tag_match.group(1)}, found {package_version}"
+              )
+
+          with open(os.environ["GITHUB_OUTPUT"], "a", encoding="utf-8") as stream:
+              stream.write(f"sequence={sequence}\n")
+          PY
+
+      - name: Install build tooling and reference parser
+        run: |
+          python -m pip install --constraint parser/constraints.txt --editable .
+          python -m pip install --constraint parser/constraints.txt build==1.2.2.post1
+
+      - name: Run core release checks
+        run: |
+          python -m unittest discover -s tests -v
+          pgmark validate demo/bundle
+          pgmark parse demo/bundle --format json > actual.graph.json
+          diff -u demo/expected.graph.json actual.graph.json
+          pgmark import-json demo/expected.graph.json --format json > reexported.graph.json
+          diff -u demo/expected.graph.json reexported.graph.json
+          pgmark import-json demo/expected.graph.json --format cypher > imported.cypher
+          diff -u demo/expected.cypher imported.cypher
+          pgmark parse demo/bundle --format cypher > actual.cypher
+          diff -u demo/expected.cypher actual.cypher
+          pgmark parse demo/bundle --format cypher --relationship-mode merge > actual-merge.cypher
+          diff -u demo/expected-merge.cypher actual-merge.cypher
+          git diff --check HEAD^ HEAD
+
+      - name: Run PGM Schema release checks
+        working-directory: pgm-schema
+        run: |
+          npm test
+          npm run validate
+
+      - name: Build Python distributions
+        run: python -m build
+
+      - name: Smoke-test installed wheel
+        run: |
+          python -m venv .release-wheel-venv
+          .release-wheel-venv/bin/python -m pip install --constraint parser/constraints.txt dist/*.whl
+          .release-wheel-venv/bin/python -m pip check
+          .release-wheel-venv/bin/python -c "import importlib.metadata, pgmark; assert importlib.metadata.version('property-graph-markdown') == pgmark.PROCESSOR_VERSION"
+          .release-wheel-venv/bin/pgmark --version
+          .release-wheel-venv/bin/pgmark validate demo/bundle
+          .release-wheel-venv/bin/pgmark parse demo/bundle --format json > wheel.graph.json
+          diff -u demo/expected.graph.json wheel.graph.json
+          .release-wheel-venv/bin/pgmark import-json demo/expected.graph.json --format json > wheel-reexported.graph.json
+          diff -u demo/expected.graph.json wheel-reexported.graph.json
+          .release-wheel-venv/bin/pgmark import-json demo/expected.graph.json --format cypher > wheel-imported.cypher
+          diff -u demo/expected.cypher wheel-imported.cypher
+          .release-wheel-venv/bin/pgmark parse demo/bundle --format cypher > wheel.cypher
+          diff -u demo/expected.cypher wheel.cypher
+          .release-wheel-venv/bin/pgmark parse demo/bundle --format cypher --relationship-mode merge > wheel-merge.cypher
+          diff -u demo/expected-merge.cypher wheel-merge.cypher
+
+      - name: Build public-draft source bundle
+        run: |
+          git archive \
+            --format=tar.gz \
+            --prefix=property-graph-markdown-0.4.0-public-draft.${{ steps.release-version.outputs.sequence }}/ \
+            --output=dist/pgm-0.4.0-public-draft.${{ steps.release-version.outputs.sequence }}-source.tar.gz \
+            HEAD
+          cd dist
+          sha256sum *.whl *.tar.gz > SHA256SUMS
+
+      - name: Upload release artifacts
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        with:
+          name: pgm-0.4.0-public-draft.${{ steps.release-version.outputs.sequence }}
+          path: |
+            dist/*.whl
+            dist/*.tar.gz
+            dist/SHA256SUMS
+          if-no-files-found: error
+
+      - name: Create draft GitHub release
+        if: startsWith(github.ref, 'refs/tags/')
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "${GITHUB_REF_NAME}" \
+            dist/*.whl dist/*.tar.gz dist/SHA256SUMS \
+            --draft \
+            --verify-tag \
+            --generate-notes \
+            --title "PGM 0.4.0 Public Draft (${GITHUB_REF_NAME})"
