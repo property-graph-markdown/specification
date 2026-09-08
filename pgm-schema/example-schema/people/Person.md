@@ -1,7 +1,7 @@
 ---
 type: Prototype
 full_name: Ada Lovelace
-born: null
+born: 0
 ---
 
 # Person

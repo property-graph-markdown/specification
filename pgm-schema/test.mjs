@@ -69,12 +69,12 @@ const mdDirectoryInstancePath = join(instanceRoot, "nested.md", "record.md");
 const validEntity = `---
 type: Prototype
 display_name: Example Entity
-optional_value: null
+optional_value: ""
 ---
 
 # Entity
 
-[Place](Place.md "{type: located_in, since: null}")
+[Place](Place.md "{type: located_in, since: 0}")
 
 [Untyped relationship prototype](Place.md)
 `;
@@ -134,7 +134,7 @@ try {
 
   assertValid(
     run(schemaRoot, instanceRoot),
-    "nested Concept IDs, .md path segments, preserved repeated instance occurrences, typed and untyped Relationships, null declarations, and unconstrained example values"
+    "nested Concept IDs, .md path segments, preserved repeated instance occurrences, typed and untyped Relationships, neutral placeholders, and unconstrained example values"
   );
   assertValid(run(schemaRoot), "schema-only validation");
   assertInvocationError(
@@ -156,7 +156,31 @@ try {
 
   await writeFile(
     entityPath,
-    `${validEntity}\n[Same semantic key](Place.md "{type: located_in, since: null}")\n`
+    validEntity.replace('optional_value: ""', "optional_value: null")
+  );
+  assertInvalid(
+    run(schemaRoot),
+    "PGMS_PROTOTYPE_NULL_VALUE",
+    "prototype attribute optional_value must not be YAML null",
+    "null attribute prototype"
+  );
+  await writeFile(entityPath, validEntity);
+
+  await writeFile(
+    entityPath,
+    validEntity.replace("since: 0", "since: ")
+  );
+  assertInvalid(
+    run(schemaRoot),
+    "PGMS_PROTOTYPE_NULL_VALUE",
+    "property since must not be YAML null",
+    "omitted Relationship-property prototype value"
+  );
+  await writeFile(entityPath, validEntity);
+
+  await writeFile(
+    entityPath,
+    `${validEntity}\n[Same semantic key](Place.md "{type: located_in, since: 0}")\n`
   );
   assertInvalid(
     run(schemaRoot),

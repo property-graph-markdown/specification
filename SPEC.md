@@ -2,7 +2,7 @@
 
 ## Status of this draft
 
-This document is the **PGM 0.4.0 Public Draft**, dated 2026-08-23. It is
+This document is the **PGM 0.4.0 Public Draft**, dated 2026-09-08. It is
 published for implementation and community review and is not yet a final
 standard. Incompatible corrections remain possible before a final 0.4.0
 release.

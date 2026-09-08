@@ -97,9 +97,10 @@ where:
 
 `P(X)` denotes the power set of `X`.
 
-Example values may accompany entries in `A` and `P`, but they are not part of
-the conformance predicates. PGM Schema defines structure by key presence, not
-datatypes or value equality.
+Non-null example or neutral placeholder values accompany entries in `A` and
+`P`, but their concrete values are not part of the instance-conformance
+predicates. PGM Schema defines structure by key presence, not datatypes or
+value equality.
 
 ## 5. Schema bundle
 
@@ -145,14 +146,21 @@ or another OKF field is present, that key is also declared as an attribute of
 the specified Type's instances. A prototype's display name therefore belongs
 in its first H1 rather than in a special frontmatter `name` field.
 
-An author declares an attribute without an example value by assigning YAML
-`null`:
+Every attribute prototype SHALL have a non-null YAML value. An author MAY use
+a substantive example value or a neutral placeholder. The canonical neutral
+placeholders are:
 
 ```yaml
-born: null
+display_name: ""
+year: 0
+published: false
+tags: []
+address: {}
 ```
 
-Any other valid PGM/OKF YAML value is an example:
+The placeholder SHOULD reflect the intended YAML shape for human readers:
+`""` for a string, `0` for a number, `false` for a boolean, `[]` for a
+sequence, and `{}` for a mapping. A substantive example is equally valid:
 
 ```yaml
 full_name: Ada Lovelace
@@ -160,9 +168,13 @@ interests: [mathematics, music]
 address: {city: London, country: UK}
 ```
 
-Example values are informative. A processor SHALL NOT infer a datatype,
-requiredness, enumeration, default, nested schema, or value constraint from
-them.
+YAML `null`, `~`, and a key with an omitted value all represent the same null
+value and SHALL NOT be used for an attribute prototype. In particular,
+`display_name:` does not encode an empty string; `display_name: ""` does.
+
+Example and placeholder values are informative. A processor SHALL NOT infer a
+datatype, requiredness, enumeration, default, nested schema, or value
+constraint from them.
 
 ### 5.4 Relationship prototypes
 
@@ -189,8 +201,18 @@ Core PGM still retains `type` in the complete Relationship Property map. PGM
 Schema projects that retained value into the relationship signature and
 excludes only that key from `P`; it does not mutate the PGM source or AST.
 
-A relationship property with YAML `null` is declared without an example. Any
-other value is informative example data. Values do not constrain instances.
+Every relationship data Property prototype SHALL have a non-null YAML value.
+An author MAY use substantive example data or the same canonical neutral
+placeholders defined for attribute prototypes. For example, an empty string in
+a double-quoted Markdown Link title can be written without conflicting quote
+delimiters by using YAML single quotes:
+
+```markdown
+[Phenomenon](Phenomenon.md "{type: observed, incident: ''}")
+```
+
+`incident:` would instead be YAML null and is not a valid empty-string
+placeholder. Prototype values do not constrain instances.
 
 The same Relationship Type MAY occur on several Source Types and MAY point to
 several Target Types. Source and Target constraints are implicit in the
@@ -329,6 +351,7 @@ PGM-Schema-specific codes:
 | `PGMS_SCHEMA_EMPTY` | Schema bundle has no Prototype concept candidate. |
 | `PGMS_PROTOTYPE_REQUIRED` | A schema concept does not use `type: Prototype`. |
 | `PGMS_PROTOTYPE_TARGET_UNRESOLVED` | A prototype target is outside the schema bundle. |
+| `PGMS_PROTOTYPE_NULL_VALUE` | A prototype attribute or Relationship data Property uses YAML null. |
 | `PGMS_DUPLICATE_SIGNATURE` | Two prototype occurrences declare one signature. |
 | `PGMS_INSTANCE_ROOT_INVALID` | Instance root is not a directory. |
 | `PGMS_INSTANCE_TYPE_UNKNOWN` | An instance names no schema Type. |
@@ -354,7 +377,7 @@ Markdown, and YAML:
 ---
 type: Prototype
 full_name: Ada Lovelace
-born: null
+born: 0
 ---
 
 # Person

@@ -5,9 +5,11 @@ for representing directed property multigraphs without adding Markdown syntax.
 
 > PGM adds graph semantics, not syntax.
 
+**Website and interactive Ada graph:** [pgm.md](https://pgm.md)
+
 ## Public Draft status
 
-This repository implements **PGM 0.4.0 Public Draft 1**, dated 2026-08-23. Its
+This repository implements **PGM 0.4.0 Public Draft 1**, dated 2026-09-08. Its
 PEP 440 Python package version is `0.4.0a1`. It is ready for implementation
 feedback from the OKF, Markdown, Obsidian, graph database, and
 knowledge-management communities, but it is not a final standard. Incompatible
@@ -16,6 +18,8 @@ corrections may still be made before final 0.4.0.
 The normative document is [SPEC.md](SPEC.md). Please report ambiguities and
 interoperability results in the
 [issue tracker](https://github.com/property-graph-markdown/specification/issues).
+The immutable publication snapshot is
+[`v0.4.0-public-draft.1`](https://github.com/property-graph-markdown/specification/tree/v0.4.0-public-draft.1).
 
 ## The model
 
@@ -64,6 +68,10 @@ The fundamental cases are:
 All six Links remain separate occurrences when authored together. Equal graph
 values may share a portable semantic `relationship_key`, but PGM Core never
 coalesces the source assertions.
+
+For a complete five-node example, start with the
+[Ada Lovelace Knowledge Bundle](examples/index.md). It validates to five Nodes,
+five Relationships, and zero warnings.
 
 Broken in-bundle Concept Links remain Relationships to unresolved Concept ID
 references; they do not create fictional PGM Nodes. A path-bearing fragment
@@ -158,6 +166,7 @@ PGM Schema tests on Node.js 20, 22, and 24.
 ## Repository map
 
 - [SPEC.md](SPEC.md): normative PGM 0.4.0 Public Draft.
+- [examples](examples/index.md): five-node Ada Lovelace example graph.
 - [RATIONALE.md](RATIONALE.md): design decisions and trade-offs.
 - [parser](parser/README.md): reference processor and adapters.
 - [tests](tests/README.md): executable conformance and interoperability tests.

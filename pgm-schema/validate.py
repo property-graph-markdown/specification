@@ -106,6 +106,16 @@ def load_schema(
         attributes[type_name] = (
             frozenset(set(node.properties) - {"type"}) if node else frozenset()
         )
+        if node:
+            for key, value in sorted(node.properties.items()):
+                if key != "type" and value is None:
+                    errors.append(
+                        SchemaDiagnostic(
+                            "PGMS_PROTOTYPE_NULL_VALUE",
+                            f"schema:{document_id}: prototype attribute {key} "
+                            "must not be YAML null",
+                        )
+                    )
 
     for document_id in sorted(documents):
         node = graph.nodes.get(document_id)
@@ -113,6 +123,17 @@ def load_schema(
             continue
         source_type = document_id
         for relationship in node.relationships:
+            for key, value in sorted(relationship.properties.items()):
+                if key != "type" and value is None:
+                    errors.append(
+                        SchemaDiagnostic(
+                            "PGMS_PROTOTYPE_NULL_VALUE",
+                            f"schema:{document_id}: prototype relationship "
+                            f"{source_type} "
+                            f"-[{relationship_type_name(relationship.type)}]-> "
+                            f"{relationship.target} property {key} must not be YAML null",
+                        )
+                    )
             if relationship.target not in documents:
                 errors.append(
                     SchemaDiagnostic(

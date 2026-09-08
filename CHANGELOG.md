@@ -8,7 +8,7 @@ while the specification remains under review.
 
 - No changes yet.
 
-## 0.4.0 Public Draft 1 / Python 0.4.0a1 - 2026-08-23
+## 0.4.0 Public Draft 1 / Python 0.4.0a1 - 2026-09-08
 
 ### Added
 
@@ -32,6 +32,10 @@ while the specification remains under review.
   interpreted structurally as the Graph Element Type.
 - The reference parser composes CommonMark and YAML processors instead of
   maintaining a PGM-specific Link lexer or Property grammar.
+- Prototype attributes and Relationship data Properties require non-null
+  example or neutral placeholder values. Canonical neutral placeholders are
+  `""`, `0`, `false`, `[]`, and `{}`; an omitted YAML value remains null and
+  is rejected by the PGM Schema validator.
 
 ### Removed
 

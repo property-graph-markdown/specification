@@ -24,7 +24,7 @@ Node Label, Property Key, or Relationship Type registry.
 ---
 type: Prototype
 full_name: Ada Lovelace
-born: null
+born: 0
 ---
 
 # Person
@@ -44,12 +44,19 @@ This prototype declares:
 
 - instance attributes `full_name` and `born`;
 - `Ada Lovelace` as an example for `full_name`;
-- no example value for `born`, represented by YAML `null`;
+- neutral numeric placeholder `0` for `born`;
 - a `born_in` relationship from `people/Person` to `places/Place`; and
 - relationship property `year`, with example value `1815`.
 
-Example values document the shape but impose no datatype or value constraint.
-All declared attributes and relationships are optional.
+Prototype attributes and relationship data Properties always carry a
+non-null example or neutral placeholder. Use `""` for strings, `0` for
+numbers, `false` for booleans, `[]` for sequences, and `{}` for mappings.
+Inside a double-quoted Markdown Link title, use YAML single quotes for an empty
+string, for example `{type: observed, incident: ''}`. A missing value such as
+`incident:` is YAML null, not an empty string, and is invalid in a prototype.
+
+These values document the intended shape but impose no datatype, default, or
+value constraint. All declared attributes and relationships are optional.
 
 The first H1 SHOULD match the final segment of the Concept ID. Thus
 `people/Person.md` uses `# Person`. The full, normative Type name remains
