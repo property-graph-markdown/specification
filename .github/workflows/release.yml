@@ -94,6 +94,7 @@ jobs:
         run: |
           python -m unittest discover -s tests -v
           pgmark validate demo/bundle
+          pgmark validate demo-vault
           pgmark parse demo/bundle --format json > actual.graph.json
           diff -u demo/expected.graph.json actual.graph.json
           pgmark import-json demo/expected.graph.json --format json > reexported.graph.json
@@ -112,6 +113,9 @@ jobs:
           npm test
           npm run validate
 
+      - name: Validate Ada Demo Vault against its schema
+        run: node pgm-schema/validate.mjs demo-vault-schema demo-vault
+
       - name: Build Python distributions
         run: python -m build
 
@@ -123,6 +127,7 @@ jobs:
           .release-wheel-venv/bin/python -c "import importlib.metadata, pgmark; assert importlib.metadata.version('property-graph-markdown') == pgmark.PROCESSOR_VERSION"
           .release-wheel-venv/bin/pgmark --version
           .release-wheel-venv/bin/pgmark validate demo/bundle
+          .release-wheel-venv/bin/pgmark validate demo-vault
           .release-wheel-venv/bin/pgmark parse demo/bundle --format json > wheel.graph.json
           diff -u demo/expected.graph.json wheel.graph.json
           .release-wheel-venv/bin/pgmark import-json demo/expected.graph.json --format json > wheel-reexported.graph.json
@@ -141,8 +146,13 @@ jobs:
             --prefix=property-graph-markdown-0.4.0-public-draft.${{ steps.release-version.outputs.sequence }}/ \
             --output=dist/pgm-0.4.0-public-draft.${{ steps.release-version.outputs.sequence }}-source.tar.gz \
             HEAD
+          git archive \
+            --format=zip \
+            --prefix=pgm-ada-demo-vault-0.4.0-public-draft.${{ steps.release-version.outputs.sequence }}/ \
+            --output=dist/pgm-ada-demo-vault-0.4.0-public-draft.${{ steps.release-version.outputs.sequence }}.zip \
+            HEAD:demo-vault
           cd dist
-          sha256sum *.whl *.tar.gz > SHA256SUMS
+          sha256sum *.whl *.tar.gz *.zip > SHA256SUMS
 
       - name: Upload release artifacts
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
@@ -151,6 +161,7 @@ jobs:
           path: |
             dist/*.whl
             dist/*.tar.gz
+            dist/*.zip
             dist/SHA256SUMS
           if-no-files-found: error
 
@@ -160,7 +171,7 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           gh release create "${GITHUB_REF_NAME}" \
-            dist/*.whl dist/*.tar.gz dist/SHA256SUMS \
+            dist/*.whl dist/*.tar.gz dist/*.zip dist/SHA256SUMS \
             --draft \
             --verify-tag \
             --generate-notes \

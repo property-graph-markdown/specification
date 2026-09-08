@@ -19,6 +19,8 @@ while the specification remains under review.
   import and deterministic byte-identical re-export.
 - Deterministic reference-parser, JSON-roundtrip, and Cypher-export tests.
 - The independent prototype-based PGM Schema validation profile.
+- The self-contained 46-node, 124-relationship Ada Lovelace Demo Vault and its
+  five-Type PGM Schema prototype bundle.
 - Reproducible release constraints, continuous integration, and public-draft
   packaging instructions.
 

@@ -8,6 +8,7 @@ ROOT = Path(__file__).resolve().parents[1]
 CLI = ROOT / "parser" / "pgmark.py"
 DEMO = ROOT / "demo"
 BUNDLE = DEMO / "bundle"
+ADA_VAULT = ROOT / "demo-vault"
 
 SNAPSHOTS = (
     ("expected.graph.json", ("--format", "json")),
@@ -81,6 +82,32 @@ class DemoTests(unittest.TestCase):
         )
         self.assertEqual(result.stderr, b"")
         self.assertEqual(result.stdout, snapshot.read_bytes())
+
+    def test_ada_demo_vault_release_invariant(self):
+        markdown_files = sorted(
+            path.relative_to(ADA_VAULT)
+            for path in ADA_VAULT.rglob("*.md")
+            if ".obsidian" not in path.parts
+        )
+        self.assertEqual(len(markdown_files), 47)
+        self.assertEqual(
+            [path for path in markdown_files if path.name == "index.md"],
+            [Path("index.md")],
+        )
+        self.assertTrue((ADA_VAULT / "ATTRIBUTION.txt").is_file())
+
+        result = run_cli("validate", ADA_VAULT)
+        self.assertEqual(
+            result.returncode,
+            0,
+            result.stderr.decode("utf-8", errors="replace"),
+        )
+        self.assertEqual(result.stderr, b"")
+        self.assertEqual(
+            result.stdout,
+            b"PGM Core Bundle conforms to 0.4.0 Public Draft: "
+            b"46 nodes, 124 relationships, 0 warnings\n",
+        )
 
 
 if __name__ == "__main__":

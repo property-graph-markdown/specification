@@ -33,6 +33,7 @@ Create an isolated Python environment, then run:
 python -m pip install --constraint parser/constraints.txt --editable .
 python -m unittest discover -s tests -v
 pgmark validate demo/bundle
+pgmark validate demo-vault
 pgmark parse demo/bundle --format json > actual.graph.json
 diff -u demo/expected.graph.json actual.graph.json
 pgmark import-json demo/expected.graph.json --format json > reexported.graph.json
@@ -51,6 +52,8 @@ Validate the separate PGM Schema profile:
 cd pgm-schema
 NO_UPDATE_NOTIFIER=1 PYTHON=python npm test
 NO_UPDATE_NOTIFIER=1 PYTHON=python npm run validate
+cd ..
+NO_UPDATE_NOTIFIER=1 PYTHON=python node pgm-schema/validate.mjs demo-vault-schema demo-vault
 ```
 
 Return to the repository root and build the Python artifacts:
@@ -73,6 +76,7 @@ python -m venv "$PGM_WHEEL_ENV"
 "$PGM_WHEEL_ENV/bin/python" -m pip check
 "$PGM_WHEEL_ENV/bin/pgmark" --version
 "$PGM_WHEEL_ENV/bin/pgmark" validate demo/bundle
+"$PGM_WHEEL_ENV/bin/pgmark" validate demo-vault
 "$PGM_WHEEL_ENV/bin/pgmark" parse demo/bundle --format json > wheel.graph.json
 diff -u demo/expected.graph.json wheel.graph.json
 "$PGM_WHEEL_ENV/bin/pgmark" import-json demo/expected.graph.json --format json > wheel-reexported.graph.json
@@ -109,8 +113,10 @@ Before publishing the generated GitHub Release:
 3. confirm that the fresh-wheel smoke test reproduced the JSON exchange and
    Cypher snapshots;
 4. inspect the rendered specification and changelog;
-5. confirm that the release is clearly labelled **Public Draft**; and
-6. publish the draft Release manually.
+5. inspect the standalone Ada Demo Vault ZIP and confirm that it contains 47
+   Markdown files, `ATTRIBUTION.txt`, and no `.obsidian` directory;
+6. confirm that the release is clearly labelled **Public Draft**; and
+7. publish the draft Release manually.
 
 Do not reuse or move an already published tag. Corrections receive the next
 `public-draft.N` tag.

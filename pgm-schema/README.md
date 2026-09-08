@@ -106,6 +106,9 @@ permitted signature; the validator checks and preserves each one.
 - [example-schema](example-schema) is a complete OKF schema bundle of
   `Prototype` concepts.
 - [example-graph](example-graph) is a conforming OKF/PGM instance bundle.
+- [../demo-vault-schema](../demo-vault-schema) and
+  [../demo-vault](../demo-vault/index.md) are the five-Type schema and full
+  46-node Ada Lovelace instance bundled with the PGM specification.
 - [validate.py](validate.py) is the prototype-aware validator.
 - [test.mjs](test.mjs) contains positive and negative conformance tests.
 
@@ -133,6 +136,12 @@ Validate another schema and instance bundle:
 
 ```sh
 node validate.mjs /path/to/schema-bundle /path/to/instance-bundle
+```
+
+From the repository root, validate the complete Ada Demo Vault:
+
+```sh
+node pgm-schema/validate.mjs demo-vault-schema demo-vault
 ```
 
 The Python dependencies of the PGM reference parser are required; install

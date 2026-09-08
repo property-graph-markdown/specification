@@ -40,7 +40,9 @@ jobs:
         run: python -m unittest discover -s tests -v
 
       - name: Validate demo bundle
-        run: pgmark validate demo/bundle
+        run: |
+          pgmark validate demo/bundle
+          pgmark validate demo-vault
 
       - name: Verify JSON exchange snapshot
         run: |
@@ -105,6 +107,9 @@ jobs:
       - name: Validate bundled schema and instance
         working-directory: pgm-schema
         run: npm run validate
+
+      - name: Validate Ada Demo Vault against its schema
+        run: node pgm-schema/validate.mjs demo-vault-schema demo-vault
 
   quality:
     name: Repository quality

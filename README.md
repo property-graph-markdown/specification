@@ -69,9 +69,13 @@ All six Links remain separate occurrences when authored together. Equal graph
 values may share a portable semantic `relationship_key`, but PGM Core never
 coalesces the source assertions.
 
-For a complete five-node example, start with the
-[Ada Lovelace Knowledge Bundle](examples/index.md). It validates to five Nodes,
-five Relationships, and zero warnings.
+For the review-sized example, start with the self-contained
+[Ada Lovelace Demo Vault](demo-vault/index.md). Its 46 Concept Nodes and 124
+Relationship occurrences are versioned directly with this specification and
+validate with zero warnings. The accompanying
+[Demo Vault Schema](demo-vault-schema) defines five prototype Types and 41
+permitted Relationship signatures. A compact five-node example remains in
+[examples](examples/index.md).
 
 Broken in-bundle Concept Links remain Relationships to unresolved Concept ID
 references; they do not create fictional PGM Nodes. A path-bearing fragment
@@ -116,7 +120,9 @@ Python 3.10 through 3.14 are supported.
 python -m pip install --constraint parser/constraints.txt --editable .
 pgmark --version
 pgmark validate demo/bundle
+pgmark validate demo-vault
 pgmark parse demo/bundle --format json
+pgmark parse demo-vault --format json
 pgmark import-json demo/expected.graph.json --format json
 pgmark parse demo/bundle --format cypher
 ```
@@ -153,6 +159,8 @@ Run the complete local release gate:
 
 ```sh
 python -m unittest discover -s tests -v
+pgmark validate demo-vault
+node pgm-schema/validate.mjs demo-vault-schema demo-vault
 cd pgm-schema
 NO_UPDATE_NOTIFIER=1 PYTHON=python npm test
 NO_UPDATE_NOTIFIER=1 PYTHON=python npm run validate
@@ -166,6 +174,10 @@ PGM Schema tests on Node.js 20, 22, and 24.
 ## Repository map
 
 - [SPEC.md](SPEC.md): normative PGM 0.4.0 Public Draft.
+- [demo-vault](demo-vault/index.md): full 46-node Ada Lovelace graph bundled
+  with the specification.
+- [demo-vault-schema](demo-vault-schema): five prototype Types for validating
+  the full Ada graph with PGM Schema.
 - [examples](examples/index.md): five-node Ada Lovelace example graph.
 - [RATIONALE.md](RATIONALE.md): design decisions and trade-offs.
 - [parser](parser/README.md): reference processor and adapters.
@@ -178,3 +190,11 @@ PGM Schema tests on Node.js 20, 22, and 24.
 
 PGM Schema is independent from PGM Core conformance. PGM Core describes the
 graph; PGM Schema optionally validates structural names and prototypes.
+
+## License
+
+The specification, reference parser, tests, and PGM Schema are available under
+the [MIT License](LICENSE). The complete [Ada Demo Vault](demo-vault/index.md)
+is available under
+[CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/); see its
+[attribution notice](demo-vault/ATTRIBUTION.txt).

@@ -7,6 +7,7 @@ include ROADMAP.md
 include SPEC.md
 
 recursive-include demo *.cypher *.json *.md
+recursive-include demo-vault-schema *.md
 recursive-include examples *.cypher *.md
 recursive-include interop *.json
 recursive-include parser *.md *.txt
