@@ -210,7 +210,7 @@ SPEC.md              Normative 0.3.0 draft specification
 RATIONALE.md         Design rationale
 GRAMMAR.ebnf         Minimal class-expression grammar
 examples/            Small coherent Invoice-Person-Project graph
-meta-ontology/       Non-normative PGM meta-ontology written in PGM
+demo-vault/          Canonical 46-Concept Ada Lovelace demo vault
 parser/              Python reference parser
 tests/               Parser tests and core cases
 obsidian-plugin/     Minimal Obsidian editor integration
@@ -218,9 +218,9 @@ obsidian-plugin/     Minimal Obsidian editor integration
 
 The Obsidian plugin extracts graph semantics only from CommonMark links. Its wikilink command converts compatible Obsidian authoring syntax to canonical PGM CommonMark before extraction.
 
-## Meta-Ontology
+## Demo Vault
 
-The non-normative `meta-ontology/` directory describes the three elements a PGM ontology can document: node labels, relationship types, and property keys. It defines no validation rules, allowed combinations, or built-in property keys. The meta-ontology is itself written in PGM 0.3.0.
+The [Ada Lovelace Demo Vault](demo-vault/index.md) contains the project's complete 46-Concept PGM 0.4.0 example Knowledge Bundle. Open `demo-vault/` directly in Obsidian or browse the Markdown files on GitHub. The vault is licensed under [CC BY-SA 4.0](demo-vault/ATTRIBUTION.txt).
 
 ## Roadmap
 

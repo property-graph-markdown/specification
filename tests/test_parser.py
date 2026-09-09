@@ -324,15 +324,6 @@ class ParserTests(unittest.TestCase):
         self.assertEqual(graph.nodes["a.md"].labels, [])
         self.assertEqual(graph.relationships[0].type, "LABEL")
 
-    def test_repository_meta_ontology_parses_without_diagnostics(self):
-        graph = parse_corpus(ROOT / "meta-ontology")
-
-        self.assertEqual(graph.warnings, [])
-        self.assertEqual(graph.errors, [])
-        self.assertEqual(graph.relationships, [])
-        for name in ["NodeLabel.md", "RelationshipType.md", "PropertyKey.md"]:
-            self.assertEqual(graph.nodes[name].labels, ["NodeLabel"])
-
     def test_examples_match_expected_cypher(self):
         graph = parse_corpus(ROOT / "examples")
         expected = (ROOT / "examples" / "expected.cypher").read_text(encoding="utf-8").strip()
