@@ -5,7 +5,7 @@ for representing directed property multigraphs without adding Markdown syntax.
 
 > PGM adds graph semantics, not syntax.
 
-**Website and interactive Ada graph:** [pgm.md](https://pgm.md)
+**Website and interactive Ada graph:** [pgm.technology](https://pgm.technology)
 
 ## Public Draft status
 
