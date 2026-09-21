@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Reference validator for prototype-based PGM Schema 0.4.0 Public Draft."""
+"""Reference validator for prototype-based PGM Schema 0.4.1 Public Draft."""
 
 from __future__ import annotations
 
@@ -18,7 +18,7 @@ from validation import OKF_COMMIT, OKF_SPEC_SHA256  # noqa: E402
 
 
 Signature = Tuple[str, Optional[str], str]
-PGM_SCHEMA_VERSION = "0.4.0"
+PGM_SCHEMA_VERSION = "0.4.1"
 PGM_SCHEMA_STATUS = "Public Draft"
 PGM_SCHEMA_VERSION_LABEL = f"{PGM_SCHEMA_VERSION} {PGM_SCHEMA_STATUS}"
 
@@ -95,11 +95,11 @@ def load_schema(
         node = graph.nodes.get(document_id)
         type_name = document_id
         actual_type = node.type if node else None
-        if actual_type != "Prototype":
+        if actual_type != "Type":
             errors.append(
                 SchemaDiagnostic(
                     "PGMS_PROTOTYPE_REQUIRED",
-                    f"schema:{document_id}: expected frontmatter type Prototype, "
+                    f"schema:{document_id}: expected frontmatter type Type, "
                     f"found {actual_type or '<missing>'}",
                 )
             )
@@ -258,7 +258,7 @@ def validate_instance(root: Path, schema: PrototypeSchema) -> List[SchemaDiagnos
 def main(argv: Optional[List[str]] = None) -> int:
     parser = argparse.ArgumentParser(
         description=(
-            "Validate a prototype-based PGM Schema 0.4.0 Public Draft bundle "
+            "Validate a prototype-based PGM Schema 0.4.1 Public Draft bundle "
             "and optional instance bundle."
         )
     )

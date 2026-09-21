@@ -9,16 +9,19 @@ for representing directed property multigraphs without adding Markdown syntax.
 
 ## Public Draft status
 
-This repository implements **PGM 0.4.0 Public Draft 1**, dated 2026-09-08. Its
-PEP 440 Python package version is `0.4.0a1`. It is ready for implementation
-feedback from the OKF, Markdown, Obsidian, graph database, and
-knowledge-management communities, but it is not a final standard. Incompatible
-corrections may still be made before final 0.4.0.
+This repository implements **PGM 0.4.0 Public Draft** and the independent
+**PGM Schema 0.4.1 Public Draft**. The accompanying PEP 440
+Python package version is `0.4.1a1`. Schema prototypes now use `type: Type`; see
+the [schema migration notes](pgm-schema/README.md#migrating-from-040).
+The drafts are ready for implementation feedback from the OKF, Markdown,
+Obsidian, graph database, and
+knowledge-management communities, but they are not final standards. Incompatible
+corrections may still be made before either specification becomes final.
 
 The normative document is [SPEC.md](SPEC.md). Please report ambiguities and
 interoperability results in the
 [issue tracker](https://github.com/property-graph-markdown/specification/issues).
-The immutable publication snapshot is
+The earlier PGM 0.4.0 publication snapshot is
 [`v0.4.0-public-draft.1`](https://github.com/property-graph-markdown/specification/tree/v0.4.0-public-draft.1).
 
 ## The model

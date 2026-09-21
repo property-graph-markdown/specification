@@ -1,6 +1,6 @@
 {
   "name": "pgm-schema",
-  "version": "0.4.0-public-draft.1",
+  "version": "0.4.1-public-draft.1",
   "private": true,
   "description": "Prototype-based schema profile for OKF Knowledge Bundles with PGM relationships",
   "engines": {

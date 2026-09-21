@@ -1,10 +1,11 @@
 # Releasing a PGM Public Draft
 
-PGM 0.4.0 public drafts use tags of the form
-`v0.4.0-public-draft.N`. Draft sequence `N` maps directly to the PEP 440 Python
-package version `0.4.0aN`. The current Draft 1 therefore uses tag
-`v0.4.0-public-draft.1` and package version `0.4.0a1`; the specification version
-remains 0.4.0.
+Repository public drafts use tags of the form `vX.Y.Z-public-draft.N`.
+The tag maps to PEP 440 Python package version `X.Y.ZaN` and PGM Schema
+package version `X.Y.Z-public-draft.N`. The current release uses tag
+`v0.4.1-public-draft.1`, Python package `0.4.1a1`, and PGM Schema 0.4.1.
+The independent PGM Core specification remains **0.4.0 Public Draft**.
+A package release does not by itself revise the Core conformance baseline.
 
 ## 1. Prepare the candidate
 
@@ -15,11 +16,12 @@ git status --short --branch
 git diff --check
 ```
 
-Confirm that `SPEC.md`, `pyproject.toml`, the parser, PGM Schema, Demo Vault,
-and the changelog consistently identify PGM 0.4.0 as a Public Draft. Verify
-the tag-to-package mapping (`public-draft.N` to Python `0.4.0aN` and PGM
-Schema `0.4.0-public-draft.N`) and replace the date in `CHANGELOG.md` if
-publication occurs on another day.
+Confirm that `SPEC.md` and the parser identify PGM Core 0.4.0 as a Public
+Draft, while `pgm-schema/SPEC.md` and its validator identify PGM Schema 0.4.1.
+Verify the tag-to-package mapping (`vX.Y.Z-public-draft.N` to Python
+`X.Y.ZaN` and PGM Schema `X.Y.Z-public-draft.N`), the processor version,
+and the date in `CHANGELOG.md`. The schema examples and Demo Vault schema
+must use `type: Type`; instance Type names remain unchanged.
 
 Every third-party GitHub Action in the workflows is pinned to an immutable
 commit SHA reviewed for this draft. Re-resolve each upstream release tag and
@@ -92,12 +94,12 @@ diff -u demo/expected-merge.cypher wheel-merge.cypher
 ## 3. Tag the reviewed commit
 
 Choose the next draft sequence number, update the Python package and `pgmark`
-processor to the corresponding `0.4.0aN` version and PGM Schema to
-`0.4.0-public-draft.N`, then create an annotated tag. For Draft 1:
+processor to the corresponding `X.Y.ZaN` version and PGM Schema to
+`X.Y.Z-public-draft.N`, then create an annotated tag. For Schema 0.4.1 Draft 1:
 
 ```sh
-git tag -a v0.4.0-public-draft.1 -m "PGM 0.4.0 Public Draft 1"
-git push origin v0.4.0-public-draft.1
+git tag -a v0.4.1-public-draft.1 -m "PGM Schema 0.4.1 Public Draft 1 / PGM Core 0.4.0"
+git push origin v0.4.1-public-draft.1
 ```
 
 Pushing a matching tag triggers `.github/workflows/release.yml`. The workflow

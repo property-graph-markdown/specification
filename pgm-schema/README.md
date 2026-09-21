@@ -1,6 +1,6 @@
 # PGM Schema
 
-PGM Schema 0.4.0 Public Draft is prototype modeling for OKF Knowledge Bundles
+PGM Schema 0.4.1 Public Draft is prototype modeling for OKF Knowledge Bundles
 with PGM Relationships. Its normative Core basis is
 [PGM 0.4.0 Public Draft](../SPEC.md), including OKF 0.2 at pinned commit
 `3fcbb9f828c2f23d109c855ee403c3a4c81f3a96` and specification SHA-256
@@ -8,7 +8,7 @@ with PGM Relationships. Its normative Core basis is
 
 The whole model is one rule:
 
-> An OKF concept with `type: Prototype` specifies the Type named by its Concept
+> An OKF concept with `type: Type` specifies the Type named by its Concept
 > ID. Its other frontmatter entries prototype attributes of that Type's
 > instances, and all of its PGM Concept Links prototype the Relationships those
 > instances may have. YAML titles optionally add Types and Properties.
@@ -16,13 +16,21 @@ The whole model is one rule:
 There is no M2*, no definition hierarchy, no `identifier`, and no separate
 Node Label, Property Key, or Relationship Type registry.
 
+## Migrating from 0.4.0
+
+Change the frontmatter of each schema prototype from `type: Prototype` to
+`type: Type`. The 0.4.1 validator requires the new marker and rejects the old
+one. Keep filenames, Concept IDs, instance `type` values, attribute examples,
+and relationship prototypes unchanged. The modeling approach remains
+prototype-based, and the PGM Core baseline remains 0.4.0.
+
 ## Prototype concept
 
 `example-schema/people/Person.md`:
 
 ```markdown
 ---
-type: Prototype
+type: Type
 full_name: Ada Lovelace
 born: 0
 ---
@@ -102,9 +110,9 @@ permitted signature; the validator checks and preserves each one.
 
 ## Files
 
-- [SPEC.md](SPEC.md) is the normative PGM Schema 0.4.0 Public Draft.
+- [SPEC.md](SPEC.md) is the normative PGM Schema 0.4.1 Public Draft.
 - [example-schema](example-schema) is a complete OKF schema bundle of
-  `Prototype` concepts.
+  `Type` concepts.
 - [example-graph](example-graph) is a conforming OKF/PGM instance bundle.
 - [../demo-vault-schema](../demo-vault-schema) and
   [../demo-vault](../demo-vault/index.md) are the five-Type schema and full

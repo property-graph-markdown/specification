@@ -1,5 +1,5 @@
 ---
-type: Prototype
+type: Type
 full_name: Ada Lovelace
 born: 0
 ---

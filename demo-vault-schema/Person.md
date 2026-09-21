@@ -1,5 +1,5 @@
 ---
-type: Prototype
+type: Type
 title: ""
 description: ""
 tags: []

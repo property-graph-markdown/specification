@@ -3,7 +3,7 @@ name: Public Draft Release
 on:
   push:
     tags:
-      - "v0.4.0-public-draft.*"
+      - "v*-public-draft.*"
   workflow_dispatch:
 
 permissions:
@@ -51,38 +51,43 @@ jobs:
               schema_version = json.load(stream)["version"]
           with open("parser/pgmark.py", encoding="utf-8") as stream:
               processor_source = stream.read()
+          with open("pgm-schema/validate.py", encoding="utf-8") as stream:
+              schema_source = stream.read()
 
-          package_match = re.fullmatch(r"0\.4\.0a([1-9][0-9]*)", package_version)
+          package_match = re.fullmatch(
+              r"([0-9]+\.[0-9]+\.[0-9]+)a([1-9][0-9]*)", package_version
+          )
           schema_match = re.fullmatch(
-              r"0\.4\.0-public-draft\.([1-9][0-9]*)", schema_version
+              r"([0-9]+\.[0-9]+\.[0-9]+)-public-draft\.([1-9][0-9]*)", schema_version
           )
           processor_match = re.search(
               r'^PROCESSOR_VERSION = "([^"]+)"$', processor_source, re.MULTILINE
           )
-          assert package_match, "Python version must be 0.4.0aN with N >= 1"
-          assert schema_match, "PGM Schema version must be 0.4.0-public-draft.N"
+          schema_processor_match = re.search(
+              r'^PGM_SCHEMA_VERSION = "([^"]+)"$', schema_source, re.MULTILINE
+          )
+          assert package_match, "Python version must be X.Y.ZaN with N >= 1"
+          assert schema_match, "PGM Schema version must be X.Y.Z-public-draft.N"
           assert processor_match, "parser must declare PROCESSOR_VERSION"
           assert processor_match.group(1) == package_version, (
               "processor and Python package versions differ"
           )
-          sequence = package_match.group(1)
-          assert schema_match.group(1) == sequence, (
-              "Python and PGM Schema draft sequence numbers differ"
+          assert package_match.groups() == schema_match.groups(), (
+              "Python and PGM Schema release versions differ"
+          )
+          assert schema_processor_match, "schema validator must declare PGM_SCHEMA_VERSION"
+          assert schema_processor_match.group(1) == schema_match.group(1), (
+              "schema validator and package versions differ"
           )
 
           if os.environ.get("GITHUB_REF_TYPE") == "tag":
-              tag_match = re.fullmatch(
-                  r"v0\.4\.0-public-draft\.([1-9][0-9]*)",
-                  os.environ["GITHUB_REF_NAME"],
-              )
-              assert tag_match, "release tag must be v0.4.0-public-draft.N"
-              assert tag_match.group(1) == sequence, (
-                  f"tag {os.environ['GITHUB_REF_NAME']!r} requires Python "
-                  f"version 0.4.0a{tag_match.group(1)}, found {package_version}"
+              assert os.environ["GITHUB_REF_NAME"] == f"v{schema_version}", (
+                  f"release tag must be v{schema_version}, "
+                  f"found {os.environ['GITHUB_REF_NAME']!r}"
               )
 
           with open(os.environ["GITHUB_OUTPUT"], "a", encoding="utf-8") as stream:
-              stream.write(f"sequence={sequence}\n")
+              stream.write(f"version={schema_version}\n")
           PY
 
       - name: Install build tooling and reference parser
@@ -143,13 +148,13 @@ jobs:
         run: |
           git archive \
             --format=tar.gz \
-            --prefix=property-graph-markdown-0.4.0-public-draft.${{ steps.release-version.outputs.sequence }}/ \
-            --output=dist/pgm-0.4.0-public-draft.${{ steps.release-version.outputs.sequence }}-source.tar.gz \
+            --prefix=property-graph-markdown-${{ steps.release-version.outputs.version }}/ \
+            --output=dist/pgm-${{ steps.release-version.outputs.version }}-source.tar.gz \
             HEAD
           git archive \
             --format=zip \
-            --prefix=pgm-ada-demo-vault-0.4.0-public-draft.${{ steps.release-version.outputs.sequence }}/ \
-            --output=dist/pgm-ada-demo-vault-0.4.0-public-draft.${{ steps.release-version.outputs.sequence }}.zip \
+            --prefix=pgm-ada-demo-vault-${{ steps.release-version.outputs.version }}/ \
+            --output=dist/pgm-ada-demo-vault-${{ steps.release-version.outputs.version }}.zip \
             HEAD:demo-vault
           cd dist
           sha256sum *.whl *.tar.gz *.zip > SHA256SUMS
@@ -157,7 +162,7 @@ jobs:
       - name: Upload release artifacts
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
         with:
-          name: pgm-0.4.0-public-draft.${{ steps.release-version.outputs.sequence }}
+          name: pgm-${{ steps.release-version.outputs.version }}
           path: |
             dist/*.whl
             dist/*.tar.gz
@@ -175,4 +180,4 @@ jobs:
             --draft \
             --verify-tag \
             --generate-notes \
-            --title "PGM 0.4.0 Public Draft (${GITHUB_REF_NAME})"
+            --title "PGM Schema ${{ steps.release-version.outputs.version }} / PGM Core 0.4.0"

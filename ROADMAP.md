@@ -64,7 +64,7 @@ validation language for these structural capabilities without adding PGM
 syntax.
 
 The repository's [`pgm-schema/`](pgm-schema/README.md) directory contains the
-formal Public Draft, a schema Knowledge Bundle of `Prototype` concepts, a
+PGM Schema 0.4.1 Public Draft, a schema Knowledge Bundle of `Type` concepts, a
 conforming instance bundle, and executable conformance tests. Datatypes,
 required properties, cardinalities, inheritance, uniqueness, and inference
 remain outside the current PGM Schema draft. Superseded M2/M3 artifacts are not
