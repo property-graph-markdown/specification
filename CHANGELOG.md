@@ -1,24 +1,12 @@
 # Changelog
 
 This file records user-visible changes to Property Graph Markdown. Public-draft
-tag `vX.Y.Z-public-draft.N` maps to PEP 440 Python package version `X.Y.ZaN`
+tag `v0.4.0-public-draft.N` maps to PEP 440 Python package version `0.4.0aN`
 while the specification remains under review.
 
-## 0.4.1 Public Draft 1 / Python 0.4.1a1 - 2026-09-21
+## Unreleased
 
-### Changed
-
-- PGM Schema 0.4.1 requires `type: Type` on prototype concepts. The previous
-  `type: Prototype` marker is rejected; migrate schema documents by changing
-  only that frontmatter value. Instance Type names and prototype semantics
-  remain unchanged.
-- Updated the schema reference validator, conformance tests, example schema,
-  and Ada Demo Vault schema to the new marker.
-- The Python distribution and reference processor advance to `0.4.1a1` while
-  PGM Core conformance remains `0.4.0 Public Draft` and JSON Exchange remains
-  v1. The JSON example records the updated processor version.
-- Release metadata now distinguishes the package/schema release version from
-  the independently versioned PGM Core baseline.
+- No changes yet.
 
 ## 0.4.0 Public Draft 1 / Python 0.4.0a1 - 2026-09-08
 

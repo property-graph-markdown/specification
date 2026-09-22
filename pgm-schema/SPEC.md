@@ -1,4 +1,4 @@
-# PGM Schema 0.4.1 Public Draft
+# PGM Schema 0.4.0 Public Draft
 
 ## 1. Scope
 
@@ -10,11 +10,10 @@ PGM Schema adds no syntax. It gives schema meaning to ordinary OKF concepts
 whose frontmatter has exactly this modeling-role marker:
 
 ```yaml
-type: Type
+type: Prototype
 ```
 
-A concept with `type: Type` is called a **prototype concept** in this profile.
-Each prototype concept specifies one graph type. Its OKF Concept ID is the
+Each Prototype concept specifies one graph type. Its OKF Concept ID is the
 name of that type. Its remaining frontmatter entries are prototype values for
 attributes of the type's instances, not attributes of the type itself. Its PGM
 relationships prototype the relationships that instances of the type may
@@ -50,14 +49,14 @@ typed or untyped Relationship. A complete YAML Flow Mapping title optionally
 enriches a Relationship with Properties and a derived Type.
 
 PGM Schema changes none of those meanings. It only interprets a bundle of
-`Type` concepts as a schema for another OKF/PGM bundle.
+`Prototype` concepts as a schema for another OKF/PGM bundle.
 
 ## 3. Core rule
 
 For every non-reserved concept document `c` in a schema bundle:
 
 ```text
-frontmatter(c).type = "Type"
+frontmatter(c).type = "Prototype"
 typeName(c) = conceptID(c)
 ```
 
@@ -69,25 +68,13 @@ people/Person.md  ->  people/Person
 Place.md          ->  Place
 ```
 
-The `type: Type` value describes the document's modeling role. It is not
+The `type: Prototype` value describes the document's modeling role. It is not
 the name of the type being specified and it is not an attribute of that type's
 instances. No `identifier` field is used.
 
 Type names are case-sensitive and path-sensitive. A type reference SHALL equal
 the complete Concept ID. `Person`, `people/Person`, and `people/person` are
 three different type names.
-
-### 3.1 Migration from PGM Schema 0.4.0
-
-PGM Schema 0.4.1 replaces the schema-document marker `type: Prototype` with
-`type: Type`. A 0.4.1 schema processor SHALL reject the former marker; it is
-not an alias. To migrate a schema bundle, change that frontmatter value on
-every prototype concept. Concept IDs, instance Type values, attribute
-prototypes, and relationship prototypes remain unchanged.
-
-This change does not revise PGM Core 0.4.0 or add a metatype registry. In
-particular, `type: Type` does not require a `Type.md` concept in the schema
-bundle. Type names continue to come from each prototype concept's Concept ID.
 
 ## 4. Prototype model
 
@@ -123,7 +110,7 @@ A schema SHALL be supplied as one explicit OKF Knowledge Bundle root.
 Subdirectories MAY organize Prototype concepts and become part of their Type
 names.
 
-Every non-reserved concept in that bundle SHALL have `type: Type`.
+Every non-reserved concept in that bundle SHALL have `type: Prototype`.
 Reserved OKF `index.md` and `log.md` documents MAY occur and do not specify
 Types.
 
@@ -319,7 +306,7 @@ relationship properties are optional, and their values are unconstrained.
 
 This specification defines three conformance classes:
 
-- A **schema bundle** conforms when every concept is a valid `Type`
+- A **schema bundle** conforms when every concept is a valid `Prototype`
   concept, every prototype Relationship occurrence resolves unambiguously
   inside the bundle, and no two occurrences declare the same schema signature.
 - An **instance bundle** conforms relative to one conforming schema bundle
@@ -337,7 +324,7 @@ A conforming processor SHALL:
 1. receive an explicit schema-bundle root;
 2. validate that bundle as OKF and PGM;
 3. exclude reserved OKF documents;
-4. require `type: Type` on every remaining concept;
+4. require `type: Prototype` on every remaining concept;
 5. derive `T` from the concepts' bundle-relative Concept IDs;
 6. derive `A` from all frontmatter keys except `type`;
 7. resolve every PGM prototype Relationship, including ordinary Concept Links,
@@ -362,7 +349,7 @@ PGM-Schema-specific codes:
 | --- | --- |
 | `PGMS_SCHEMA_ROOT_INVALID` | Schema root is not a directory. |
 | `PGMS_SCHEMA_EMPTY` | Schema bundle has no Prototype concept candidate. |
-| `PGMS_PROTOTYPE_REQUIRED` | A schema concept does not use `type: Type`. |
+| `PGMS_PROTOTYPE_REQUIRED` | A schema concept does not use `type: Prototype`. |
 | `PGMS_PROTOTYPE_TARGET_UNRESOLVED` | A prototype target is outside the schema bundle. |
 | `PGMS_PROTOTYPE_NULL_VALUE` | A prototype attribute or Relationship data Property uses YAML null. |
 | `PGMS_DUPLICATE_SIGNATURE` | Two prototype occurrences declare one signature. |
@@ -388,7 +375,7 @@ Markdown, and YAML:
 
 ```markdown
 ---
-type: Type
+type: Prototype
 full_name: Ada Lovelace
 born: 0
 ---
@@ -414,7 +401,7 @@ document the Type for people and agents but do not add schema constraints.
 
 ## 10. Non-goals
 
-PGM Schema 0.4.1 has no:
+PGM Schema 0.4.0 has no:
 
 - M2 or M2* meta-ontology;
 - Node Label, Property Key, or Relationship Type definition classes;
@@ -426,7 +413,7 @@ PGM Schema 0.4.1 has no:
   their OKF Concept IDs.
 
 Additional profiles MAY add constraints, but they SHALL identify themselves
-separately and SHALL NOT change a PGM Schema 0.4.1 conformance result silently.
+separately and SHALL NOT change a PGM Schema 0.4.0 conformance result silently.
 
 ## 11. Conformance statement
 
@@ -436,6 +423,6 @@ A reproducible conformance result SHOULD identify:
   `3fcbb9f828c2f23d109c855ee403c3a4c81f3a96`, and document SHA-256
   `5a3311d270bebb16d558010e75064f5b75323f284992641732b1c8097511f948`;
 - PGM version and status `0.4.0 Public Draft`;
-- PGM Schema version and status `0.4.1 Public Draft`;
+- PGM Schema version and status `0.4.0 Public Draft`;
 - the schema-bundle root and exact Type Concept IDs; and
 - the instance-bundle root and exact validation scope, if supplied.

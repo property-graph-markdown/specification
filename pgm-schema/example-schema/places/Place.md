@@ -1,5 +1,5 @@
 ---
-type: Type
+type: Prototype
 place_name: London
 ---
 

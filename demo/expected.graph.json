@@ -15,7 +15,7 @@
     "okfCommit": "3fcbb9f828c2f23d109c855ee403c3a4c81f3a96",
     "okfSpecSha256": "5a3311d270bebb16d558010e75064f5b75323f284992641732b1c8097511f948",
     "processorName": "pgmark",
-    "processorVersion": "0.4.1a1",
+    "processorVersion": "0.4.0a1",
     "schema": "urn:pgm:schema:graph:1",
     "yamlAliasPolicy": "acyclic-expand-by-value; cycles-rejected",
     "yamlExplicitTags": [

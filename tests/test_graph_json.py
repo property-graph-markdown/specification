@@ -87,7 +87,7 @@ class GraphJsonTests(unittest.TestCase):
         self.schema_validator.validate(data)
         self.assertEqual(data["pgmVersion"], "0.4.0 Public Draft")
         self.assertEqual(data["conformance"]["processorName"], "pgmark")
-        self.assertEqual(data["conformance"]["processorVersion"], "0.4.1a1")
+        self.assertEqual(data["conformance"]["processorVersion"], "0.4.0a1")
         self.assertEqual(
             data["conformance"]["exchangeProfile"],
             "PGM JSON Exchange Profile v1",

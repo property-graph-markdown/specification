@@ -51,7 +51,7 @@ Schema tooling is tested with Node.js 20, 22, and 24.
 
 ## Reproducible conformance statement
 
-`pgmark` 0.4.1a1 claims `PGM Core Processor`, `Portable Relationship
+`pgmark` 0.4.0a1 claims `PGM Core Processor`, `Portable Relationship
 Identification Processor`, and `PGM JSON Exchange Processor`. Its fixed bases
 and policies are:
 

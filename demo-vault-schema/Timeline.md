@@ -1,5 +1,5 @@
 ---
-type: Type
+type: Prototype
 title: ""
 from: 0
 to: 0

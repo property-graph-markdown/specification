@@ -49,7 +49,7 @@ process.stdout.write(bundled.stdout);
 const version = run("--version");
 assertValid(version, "version query");
 if (
-  !version.stdout.includes("PGM Schema 0.4.1 Public Draft; PGM 0.4.0 Public Draft;") ||
+  !version.stdout.includes("PGM Schema 0.4.0 Public Draft") ||
   !version.stdout.includes("3fcbb9f828c2f23d109c855ee403c3a4c81f3a96") ||
   !version.stdout.includes("5a3311d270bebb16d558010e75064f5b75323f284992641732b1c8097511f948")
 ) {
@@ -67,7 +67,7 @@ const mdDirectoryPrototypePath = join(schemaRoot, "namespace.md", "Record.md");
 const mdDirectoryInstancePath = join(instanceRoot, "nested.md", "record.md");
 
 const validEntity = `---
-type: Type
+type: Prototype
 display_name: Example Entity
 optional_value: ""
 ---
@@ -79,7 +79,7 @@ optional_value: ""
 [Untyped relationship prototype](Place.md)
 `;
 const validPlace = `---
-type: Type
+type: Prototype
 place_name: Example Place
 ---
 
@@ -107,7 +107,7 @@ place_name: London
 # London
 `;
 const validMdDirectoryPrototype = `---
-type: Type
+type: Prototype
 ---
 
 # Record
@@ -144,25 +144,13 @@ try {
 
   await writeFile(
     entityPath,
-    validEntity.replace("type: Type", "type: Schema")
+    validEntity.replace("type: Prototype", "type: Schema")
   );
   assertInvalid(
     run(schemaRoot),
     "PGMS_PROTOTYPE_REQUIRED",
-    "expected frontmatter type Type, found Schema",
-    "Type marker"
-  );
-  await writeFile(entityPath, validEntity);
-
-  await writeFile(
-    entityPath,
-    validEntity.replace("type: Type", "type: Prototype")
-  );
-  assertInvalid(
-    run(schemaRoot),
-    "PGMS_PROTOTYPE_REQUIRED",
-    "expected frontmatter type Type, found Prototype",
-    "legacy 0.4.0 marker is not a 0.4.1 alias"
+    "expected frontmatter type Prototype, found Schema",
+    "Prototype marker"
   );
   await writeFile(entityPath, validEntity);
 
