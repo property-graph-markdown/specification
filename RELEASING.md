@@ -1,10 +1,12 @@
 # Releasing a PGM Public Draft
 
-PGM 0.4.0 public drafts use tags of the form
-`v0.4.0-public-draft.N`. Draft sequence `N` maps directly to the PEP 440 Python
-package version `0.4.0aN`. The current Draft 1 therefore uses tag
-`v0.4.0-public-draft.1` and package version `0.4.0a1`; the specification version
-remains 0.4.0.
+The PGM 0.4.2 Relationship Trust Profile publication uses tags of the form
+`v0.4.2-public-draft.N`. Draft sequence `N` maps to PEP 440 Python package
+version `0.4.2aN`. This release adds the optional
+[Relationship Trust Profile](profiles/relationship-trust/SPEC.md) while PGM Core,
+PGM JSON Exchange v1, and the independent PGM Schema keep their 0.4.0 Public
+Draft semantics. The withdrawn `v0.4.1-public-draft.1` tag MUST NOT be moved or
+reused.
 
 ## 1. Prepare the candidate
 
@@ -15,11 +17,13 @@ git status --short --branch
 git diff --check
 ```
 
-Confirm that `SPEC.md`, `pyproject.toml`, the parser, PGM Schema, Demo Vault,
-and the changelog consistently identify PGM 0.4.0 as a Public Draft. Verify
-the tag-to-package mapping (`public-draft.N` to Python `0.4.0aN` and PGM
-Schema `0.4.0-public-draft.N`) and replace the date in `CHANGELOG.md` if
-publication occurs on another day.
+Confirm that `SPEC.md` and PGM Schema still identify their unchanged 0.4.0
+Public Drafts, while the profile, `pyproject.toml`, parser, release workflow,
+and changelog identify the 0.4.2 profile release. Verify the tag-to-package
+mapping (`public-draft.N` to Python `0.4.2aN`) and the independent PGM Schema
+version `0.4.0-public-draft.1`. Replace the release-candidate label in
+`CHANGELOG.md` with the actual publication date only on the reviewed release
+commit.
 
 Every third-party GitHub Action in the workflows is pinned to an immutable
 commit SHA reviewed for this draft. Re-resolve each upstream release tag and
@@ -34,6 +38,7 @@ python -m pip install --constraint parser/constraints.txt --editable .
 python -m unittest discover -s tests -v
 pgmark validate demo/bundle
 pgmark validate demo-vault
+pgmark trust interop/okf-relationship-carriers/pgm-links --json
 pgmark parse demo/bundle --format json > actual.graph.json
 diff -u demo/expected.graph.json actual.graph.json
 pgmark import-json demo/expected.graph.json --format json > reexported.graph.json
@@ -77,6 +82,7 @@ python -m venv "$PGM_WHEEL_ENV"
 "$PGM_WHEEL_ENV/bin/pgmark" --version
 "$PGM_WHEEL_ENV/bin/pgmark" validate demo/bundle
 "$PGM_WHEEL_ENV/bin/pgmark" validate demo-vault
+"$PGM_WHEEL_ENV/bin/pgmark" trust interop/okf-relationship-carriers/pgm-links --json
 "$PGM_WHEEL_ENV/bin/pgmark" parse demo/bundle --format json > wheel.graph.json
 diff -u demo/expected.graph.json wheel.graph.json
 "$PGM_WHEEL_ENV/bin/pgmark" import-json demo/expected.graph.json --format json > wheel-reexported.graph.json
@@ -92,12 +98,12 @@ diff -u demo/expected-merge.cypher wheel-merge.cypher
 ## 3. Tag the reviewed commit
 
 Choose the next draft sequence number, update the Python package and `pgmark`
-processor to the corresponding `0.4.0aN` version and PGM Schema to
-`0.4.0-public-draft.N`, then create an annotated tag. For Draft 1:
+processor to the corresponding `0.4.2aN` version, keep PGM Schema at its
+independent `0.4.0-public-draft.1`, then create an annotated tag. For Draft 1:
 
 ```sh
-git tag -a v0.4.0-public-draft.1 -m "PGM 0.4.0 Public Draft 1"
-git push origin v0.4.0-public-draft.1
+git tag -a v0.4.2-public-draft.1 -m "PGM 0.4.2 Relationship Trust Profile Public Draft 1"
+git push origin v0.4.2-public-draft.1
 ```
 
 Pushing a matching tag triggers `.github/workflows/release.yml`. The workflow
@@ -116,7 +122,9 @@ Before publishing the generated GitHub Release:
 5. inspect the standalone Ada Demo Vault ZIP and confirm that it contains 47
    Markdown files, `ATTRIBUTION.txt`, and no `.obsidian` directory;
 6. confirm that the release is clearly labelled **Public Draft**; and
-7. publish the draft Release manually.
+7. confirm the release description distinguishes the optional Trust Profile
+   from unchanged PGM Core and PGM Schema; and
+8. publish the draft Release manually.
 
 Do not reuse or move an already published tag. Corrections receive the next
 `public-draft.N` tag.

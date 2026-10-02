@@ -349,6 +349,10 @@ trust, lifecycle, or attestation semantics to it.
 Additional profiles MAY define such semantics. They MUST identify themselves
 and MUST NOT silently change PGM Core conformance.
 
+The optional [PGM OKF Relationship Trust Profile v1 draft](profiles/relationship-trust/SPEC.md)
+is one such optional profile. It leaves the PGM Core Result and JSON Exchange
+Profile v1 unchanged.
+
 ## 6. Portable Relationship Identification Profile
 
 PGM Core defines Relationship occurrences but does not require a technical

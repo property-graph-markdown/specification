@@ -1,0 +1,30 @@
+[
+  {
+    "physicalSource": "functions/checkout",
+    "targetReference": "functions/handler",
+    "type": "calls",
+    "declaredDirection": "inbound",
+    "trustTier": "unverified"
+  },
+  {
+    "physicalSource": "functions/checkout",
+    "targetReference": "functions/handler",
+    "type": "calls",
+    "declaredDirection": "inbound",
+    "trustTier": "unverified"
+  },
+  {
+    "physicalSource": "functions/checkout",
+    "targetReference": "functions/handler",
+    "type": "calls",
+    "declaredDirection": "inbound",
+    "trustTier": "machine-confirmed"
+  },
+  {
+    "physicalSource": "functions/checkout",
+    "targetReference": "functions/handler",
+    "type": "calls",
+    "declaredDirection": "inbound",
+    "trustTier": "human-reviewed"
+  }
+]

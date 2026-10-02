@@ -1,12 +1,32 @@
 # Changelog
 
-This file records user-visible changes to Property Graph Markdown. Public-draft
-tag `v0.4.0-public-draft.N` maps to PEP 440 Python package version `0.4.0aN`
-while the specification remains under review.
+This file records user-visible changes to Property Graph Markdown. The
+`v0.4.2-public-draft.N` publication tags map to PEP 440 Python package
+versions `0.4.2aN`. PGM Core and PGM Schema retain their independent 0.4.0
+Public Draft semantics in this profile release.
 
-## Unreleased
+## 0.4.2 Public Draft 1 / Python 0.4.2a1 - 2026-10-02
 
-- No changes yet.
+### Added
+
+- The optional PGM OKF Relationship Trust Profile v1, preserving `generated`
+  and applying OKF-analog `verified` event forms and three derived tiers
+  independently to each PGM Link occurrence.
+- An opt-in `pgmark trust` report and tests for absent, machine, human, and
+  malformed verification events. Profile errors do not alter Core conformance.
+- A reproducible OKF #16 interoperability exercise contrasting inline PGM
+  Link annotations with a proposed frontmatter relationship list.
+
+### Unchanged
+
+- PGM Core 0.4.0, PGM JSON Exchange Profile v1, and PGM Schema 0.4.0 retain
+  their source and exchange semantics. Trust tiers are derived in a separate
+  view, never inserted into the authored Relationship Property map.
+- Physical Link direction remains from the containing Concept to the Link
+  destination; a `direction` Property does not reverse it.
+
+The `v0.4.1-public-draft.1` tag belongs to a withdrawn, unrelated PGM Schema
+draft and is not reused.
 
 ## 0.4.0 Public Draft 1 / Python 0.4.0a1 - 2026-09-08
 

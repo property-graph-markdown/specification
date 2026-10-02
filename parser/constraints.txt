@@ -1,4 +1,4 @@
-# Direct dependency baseline used to validate PGM 0.4.0 Public Draft releases
+# Direct dependency baseline used to validate PGM 0.4.2 profile releases
 # on supported CPython 3.10 through 3.14.
 # Runtime compatibility remains defined by requirements.txt and pyproject.toml;
 # update this file deliberately after the full CI matrix passes.

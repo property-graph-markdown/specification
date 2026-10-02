@@ -44,6 +44,9 @@ jobs:
           pgmark validate demo/bundle
           pgmark validate demo-vault
 
+      - name: Check optional Relationship Trust Profile
+        run: pgmark trust interop/okf-relationship-carriers/pgm-links --json
+
       - name: Verify JSON exchange snapshot
         run: |
           pgmark parse demo/bundle --format json > actual.graph.json
@@ -142,21 +145,17 @@ jobs:
           with open("parser/pgmark.py", encoding="utf-8") as stream:
               processor_source = stream.read()
 
-          package_match = re.fullmatch(r"0\.4\.0a([1-9][0-9]*)", project["version"])
-          schema_match = re.fullmatch(
-              r"0\.4\.0-public-draft\.([1-9][0-9]*)", schema_version
-          )
+          package_match = re.fullmatch(r"0\.4\.2a([1-9][0-9]*)", project["version"])
           processor_match = re.search(
               r'^PROCESSOR_VERSION = "([^"]+)"$', processor_source, re.MULTILINE
           )
-          assert package_match, "Python version must be 0.4.0aN with N >= 1"
-          assert schema_match, "PGM Schema version must be 0.4.0-public-draft.N"
+          assert package_match, "Python version must be 0.4.2aN with N >= 1"
+          assert schema_version == "0.4.0-public-draft.1", (
+              "independent PGM Schema version changed unexpectedly"
+          )
           assert processor_match, "parser must declare PROCESSOR_VERSION"
           assert processor_match.group(1) == project["version"], (
               "processor and Python package versions differ"
-          )
-          assert package_match.group(1) == schema_match.group(1), (
-              "Python and PGM Schema draft sequence numbers differ"
           )
           assert project["requires-python"] == ">=3.10,<3.15"
           PY

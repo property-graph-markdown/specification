@@ -24,6 +24,7 @@ from canonical import (
     relationship_id,
     relationship_key,
 )
+from relationship_trust import relationship_trust_report
 from validation import (
     OKF_COMMIT,
     OKF_SPEC_SHA256,
@@ -39,7 +40,7 @@ PGM_VERSION = "0.4.0"
 PGM_STATUS = "Public Draft"
 PGM_VERSION_LABEL = f"{PGM_VERSION} {PGM_STATUS}"
 PROCESSOR_NAME = "pgmark"
-PROCESSOR_VERSION = "0.4.0a1"
+PROCESSOR_VERSION = "0.4.2a1"
 EXCHANGE_PROFILE = "PGM JSON Exchange Profile v1"
 EXCHANGE_SCHEMA = "urn:pgm:schema:graph:1"
 MARKDOWN_PROFILE = "CommonMark 0.31.2"
@@ -1271,6 +1272,14 @@ def main(argv: Optional[List[str]] = None) -> int:
         "--json", action="store_true", help="emit the machine-readable graph report"
     )
 
+    trust_cmd = subcommands.add_parser(
+        "trust", help="evaluate the Relationship Trust Profile without changing Core"
+    )
+    trust_cmd.add_argument("path", help="Markdown file or Knowledge Bundle root")
+    trust_cmd.add_argument(
+        "--json", action="store_true", help="emit a separate profile report as JSON"
+    )
+
     parse_cmd = subcommands.add_parser(
         "parse", help="parse and optionally serialize a PGM Core Result"
     )
@@ -1365,6 +1374,42 @@ def main(argv: Optional[List[str]] = None) -> int:
 
     if graph.errors:
         return 2 if input_failed else 1
+
+    if args.command == "trust":
+        report = relationship_trust_report(graph)
+        report.update(
+            {
+                "pgmCoreVersion": PGM_VERSION_LABEL,
+                "okfCommit": OKF_COMMIT,
+                "okfSpecSha256": OKF_SPEC_SHA256,
+                "processorName": PROCESSOR_NAME,
+                "processorVersion": PROCESSOR_VERSION,
+            }
+        )
+        if args.json:
+            print(json.dumps(report, ensure_ascii=False, indent=2, sort_keys=True))
+        else:
+            counts = {tier: 0 for tier in (
+                "unverified", "machine-confirmed", "human-reviewed"
+            )}
+            for item in report["relationships"]:
+                if item["trustTier"] is not None:
+                    counts[item["trustTier"]] += 1
+            print(
+                f"{len(report['relationships'])} relationships: "
+                f"{counts['unverified']} unverified, "
+                f"{counts['machine-confirmed']} machine-confirmed, "
+                f"{counts['human-reviewed']} human-reviewed; "
+                f"{len(report['diagnostics'])} profile errors"
+            )
+            for diagnostic in report["diagnostics"]:
+                print(
+                    "profile error "
+                    f"[{diagnostic['code']}]: {diagnostic['relationshipId']}: "
+                    f"{diagnostic['message']}",
+                    file=sys.stderr,
+                )
+        return 0 if report["conforms"] else 1
 
     output_format = "cypher" if args.cypher else args.format
     if args.cypher and args.format != "summary":

@@ -9,16 +9,18 @@ for representing directed property multigraphs without adding Markdown syntax.
 
 ## Public Draft status
 
-This repository implements **PGM 0.4.0 Public Draft 1**, dated 2026-09-08. Its
-PEP 440 Python package version is `0.4.0a1`. It is ready for implementation
-feedback from the OKF, Markdown, Obsidian, graph database, and
-knowledge-management communities, but it is not a final standard. Incompatible
-corrections may still be made before final 0.4.0.
+This repository contains the **PGM 0.4.2 Public Draft 1** profile release. Its
+PEP 440 Python package version is `0.4.2a1`. It retains **PGM Core 0.4.0
+Public Draft 1** and the independent **PGM Schema 0.4.0 Public Draft 1**, and
+adds the optional [PGM OKF Relationship Trust Profile v1](profiles/relationship-trust/SPEC.md).
+These drafts are open for implementation feedback; none is a final standard.
+The unrelated PGM Schema 0.4.1 draft was withdrawn, and its tag is not reused.
 
-The normative document is [SPEC.md](SPEC.md). Please report ambiguities and
+The normative Core document is [SPEC.md](SPEC.md); the Relationship Trust
+Profile has its own specification. Please report ambiguities and
 interoperability results in the
 [issue tracker](https://github.com/property-graph-markdown/specification/issues).
-The immutable publication snapshot is
+The immutable Core publication snapshot is
 [`v0.4.0-public-draft.1`](https://github.com/property-graph-markdown/specification/tree/v0.4.0-public-draft.1).
 
 ## The model
@@ -68,6 +70,31 @@ The fundamental cases are:
 All six Links remain separate occurrences when authored together. Equal graph
 values may share a portable semantic `relationship_key`, but PGM Core never
 coalesces the source assertions.
+
+## Relationship trust
+
+The optional [Relationship Trust Profile](profiles/relationship-trust/SPEC.md)
+preserves `generated` and reuses OKF's `verified` event vocabulary and three
+derived trust tiers for each Link occurrence independently. The complete YAML map
+remains the Relationship's authored Properties; the tier is a separate view.
+For example:
+
+```markdown
+[handler](handler.md "{type: calls, verified: {by: 'human:alice', at: '2026-09-02T09:00:00Z'}}")
+```
+
+A profile-aware consumer derives `human-reviewed` for this Relationship. A
+consumer without the profile still retains the `verified` Property. Neither
+the source Concept's trust nor a `direction` or `confidence` Property changes
+the tier. The reference processor exposes an opt-in report:
+
+```sh
+pgmark trust interop/okf-relationship-carriers/pgm-links --json
+```
+
+The [interoperability exercise](interop/okf-relationship-carriers/README.md)
+compares this inline authoring model with the still-proposed OKF #16
+frontmatter list. It does not claim that OKF has adopted either carrier.
 
 For the review-sized example, start with the self-contained
 [Ada Lovelace Demo Vault](demo-vault/index.md). Its 46 Concept Nodes and 124
@@ -173,7 +200,9 @@ PGM Schema tests on Node.js 20, 22, and 24.
 
 ## Repository map
 
-- [SPEC.md](SPEC.md): normative PGM 0.4.0 Public Draft.
+- [SPEC.md](SPEC.md): normative PGM Core 0.4.0 Public Draft.
+- [Relationship Trust Profile](profiles/relationship-trust/SPEC.md): optional
+  OKF-analog per-Relationship trust derivation introduced in this release.
 - [demo-vault](demo-vault/index.md): full 46-node Ada Lovelace graph bundled
   with the specification.
 - [demo-vault-schema](demo-vault-schema): five prototype Types for validating

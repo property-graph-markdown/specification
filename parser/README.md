@@ -1,7 +1,9 @@
 # PGM Reference Processor
 
 `pgmark.py` is the readable reference parser, validator, and adapter driver for
-the PGM 0.4.0 Public Draft. It composes existing processors instead of
+PGM Core 0.4.0 Public Draft. Processor version `0.4.2a1` also implements the
+optional [Relationship Trust Profile](../profiles/relationship-trust/SPEC.md).
+It composes existing processors instead of
 implementing a PGM grammar:
 
 1. validate the pinned OKF 0.2 rules through the local auditable adapter;
@@ -41,6 +43,7 @@ python parser/pgmark.py parse demo/bundle --format summary
 python parser/pgmark.py parse demo/bundle --format json
 python parser/pgmark.py import-json demo/expected.graph.json --format json
 python parser/pgmark.py parse demo/bundle --format cypher
+python parser/pgmark.py trust interop/okf-relationship-carriers/pgm-links --json
 python parser/pgmark.py import-json demo/expected.graph.json --format cypher
 python parser/pgmark.py parse demo/bundle --format cypher --relationship-mode merge
 python -m unittest discover -s tests -v
@@ -51,7 +54,7 @@ Schema tooling is tested with Node.js 20, 22, and 24.
 
 ## Reproducible conformance statement
 
-`pgmark` 0.4.0a1 claims `PGM Core Processor`, `Portable Relationship
+`pgmark` 0.4.2a1 claims `PGM Core Processor`, `Portable Relationship
 Identification Processor`, and `PGM JSON Exchange Processor`. Its fixed bases
 and policies are:
 
@@ -67,6 +70,15 @@ and policies are:
 Core errors, warnings, and adapter errors remain separate categories. Every
 JSON exchange document repeats this statement in its strict `conformance`
 object together with the processor name and version.
+
+The `pgmark trust` command separately implements **PGM OKF Relationship Trust
+Profile v1 Public Draft**. It evaluates each parsed Link occurrence and emits
+an advisory tier in a separate report; it never adds `trustTier` to authored
+Properties or to PGM JSON Exchange v1. Invalid present trust events cause a
+profile error and a nonzero `trust` exit status but do not invalidate an
+otherwise conforming PGM Core Bundle. A `verified` Mapping counts as one
+event; `generated`, source-Concept trust, `direction`, and `confidence` do not
+raise the Relationship tier.
 
 The CLI returns `0` on success, `1` for a Core conformance, JSON import, or
 adapter failure, and `2` for command-line misuse or an invalid input path or
