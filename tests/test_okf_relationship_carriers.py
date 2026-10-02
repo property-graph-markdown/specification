@@ -23,6 +23,13 @@ CHECKOUT = "functions/checkout"
 HANDLER = "functions/handler"
 
 
+def has_explicit_offset(value):
+    """Parse the fixture's UTC spelling on Python 3.10 as well as 3.11+."""
+
+    normalized = value[:-1] + "+00:00" if value.endswith("Z") else value
+    return datetime.fromisoformat(normalized).utcoffset() is not None
+
+
 def illustrative_view(source, target, properties):
     """Keep the physical Link assertion separate from declared direction."""
 
@@ -75,23 +82,17 @@ class OkfRelationshipCarrierExercise(unittest.TestCase):
                 self.assertNotIn("usage_window", node.properties)
                 self.assertNotIn("sources", node.properties)
             source_verified = graph.nodes[CHECKOUT].properties["verified"]
-            self.assertIsNotNone(
-                datetime.fromisoformat(source_verified["at"]).utcoffset()
-            )
+            self.assertTrue(has_explicit_offset(source_verified["at"]))
         for edge in self.pgm.relationships:
-            self.assertIsNotNone(
-                datetime.fromisoformat(edge.properties["generated"]["at"]).utcoffset()
-            )
+            self.assertTrue(has_explicit_offset(edge.properties["generated"]["at"]))
             events = edge.properties.get("verified", [])
             for event in events if isinstance(events, list) else [events]:
-                self.assertIsNotNone(datetime.fromisoformat(event["at"]).utcoffset())
+                self.assertTrue(has_explicit_offset(event["at"]))
         for entry in self.frontmatter.nodes[CHECKOUT].properties["relationships"]:
-            self.assertIsNotNone(
-                datetime.fromisoformat(entry["generated"]["at"]).utcoffset()
-            )
+            self.assertTrue(has_explicit_offset(entry["generated"]["at"]))
             events = entry.get("verified", [])
             for event in events if isinstance(events, list) else [events]:
-                self.assertIsNotNone(datetime.fromisoformat(event["at"]).utcoffset())
+                self.assertTrue(has_explicit_offset(event["at"]))
 
     def test_direction_property_does_not_reverse_pgm_core(self):
         relationships = self.pgm.relationships
