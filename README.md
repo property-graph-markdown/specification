@@ -181,6 +181,9 @@ PGM Schema tests on Node.js 20, 22, and 24.
 - [examples](examples/index.md): five-node Ada Lovelace example graph.
 - [RATIONALE.md](RATIONALE.md): design decisions and trade-offs.
 - [parser](parser/README.md): reference processor and adapters.
+- [OKF relationship-carrier exercise](interop/okf-relationship-carriers/README.md):
+  informative, executable comparison of PGM Link annotations with the
+  frontmatter proposal in OKF #16; not a normative PGM or OKF profile.
 - [tests](tests/README.md): executable conformance and interoperability tests.
 - [demo](demo/README.md): public walkthrough and output snapshots.
 - [pgm-schema](pgm-schema/README.md): separate prototype-based validation
