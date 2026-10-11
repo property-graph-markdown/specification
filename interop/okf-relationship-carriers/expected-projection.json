@@ -1,0 +1,117 @@
+{
+  "carriers": [
+    {
+      "relationships": [
+        {
+          "direction": "inbound",
+          "generated": {
+            "at": "2026-09-01T12:00:00Z",
+            "by": "roteiro/5.0.0"
+          },
+          "to": "handler.md",
+          "type": "calls"
+        },
+        {
+          "direction": "inbound",
+          "generated": {
+            "at": "2026-09-01T12:00:00Z",
+            "by": "roteiro/5.0.0"
+          },
+          "to": "handler.md",
+          "type": "calls"
+        },
+        {
+          "direction": "inbound",
+          "generated": {
+            "at": "2026-09-01T12:00:00Z",
+            "by": "roteiro/5.0.0"
+          },
+          "to": "handler.md",
+          "type": "calls",
+          "verified": {
+            "at": "2026-09-02T08:00:00Z",
+            "by": "process:ci"
+          }
+        },
+        {
+          "direction": "inbound",
+          "generated": {
+            "at": "2026-09-01T12:00:00Z",
+            "by": "roteiro/5.0.0"
+          },
+          "to": "handler.md",
+          "type": "calls",
+          "verified": [
+            {
+              "at": "2026-09-02T08:00:00Z",
+              "by": "process:ci"
+            },
+            {
+              "at": "2026-09-02T09:00:00Z",
+              "by": "human:alice"
+            }
+          ]
+        }
+      ],
+      "source": "functions/checkout"
+    }
+  ],
+  "format": "informative-pgm-to-okf16-projection",
+  "mapping": [
+    {
+      "directionIsOnlyAnAuthoredProperty": true,
+      "entryIndex": 0,
+      "occurrence": 0,
+      "omittedProperties": [
+        "confidence"
+      ],
+      "physicalTarget": "functions/handler",
+      "relationshipId": "pgmrel:v1:sha256:81e09293528d9336cea999f9f960c6719e629fa507bb2a00d67d3687264a0172",
+      "relationshipKey": "pgmkey:v1:sha256:28872a83747fb1a443c4e9f88161c7e7c195adf50e1592d85111a5574f126b97",
+      "resolved": true,
+      "source": "functions/checkout"
+    },
+    {
+      "directionIsOnlyAnAuthoredProperty": true,
+      "entryIndex": 1,
+      "occurrence": 1,
+      "omittedProperties": [
+        "confidence"
+      ],
+      "physicalTarget": "functions/handler",
+      "relationshipId": "pgmrel:v1:sha256:01f0d748978ccba65f5e6d358a1ea5bf2b962baf205e9731a74f2936af055bbe",
+      "relationshipKey": "pgmkey:v1:sha256:28872a83747fb1a443c4e9f88161c7e7c195adf50e1592d85111a5574f126b97",
+      "resolved": true,
+      "source": "functions/checkout"
+    },
+    {
+      "directionIsOnlyAnAuthoredProperty": true,
+      "entryIndex": 2,
+      "occurrence": 0,
+      "omittedProperties": [
+        "confidence"
+      ],
+      "physicalTarget": "functions/handler",
+      "relationshipId": "pgmrel:v1:sha256:b3ee653b12eb98659440acaab6c7d2947c388f4874d81d4f12e420b9d62f4aae",
+      "relationshipKey": "pgmkey:v1:sha256:3950aa2ec1bf21a9cd8b787444abf1a41ed71bb7798654650d494465a0381869",
+      "resolved": true,
+      "source": "functions/checkout"
+    },
+    {
+      "directionIsOnlyAnAuthoredProperty": true,
+      "entryIndex": 3,
+      "occurrence": 0,
+      "omittedProperties": [
+        "confidence"
+      ],
+      "physicalTarget": "functions/handler",
+      "relationshipId": "pgmrel:v1:sha256:58ab5dccf66d1ed7190ccd0caa71df5a0d944900038a4446dd762af062854b37",
+      "relationshipKey": "pgmkey:v1:sha256:3df157ca0a8692319e42c5af97e3ebfb1f71faf9285997153958213711158a37",
+      "resolved": true,
+      "source": "functions/checkout"
+    }
+  ],
+  "targetReferenceKind": "relative-markdown-path-not-stable-concept-id",
+  "unprojected": [],
+  "version": 1
+}

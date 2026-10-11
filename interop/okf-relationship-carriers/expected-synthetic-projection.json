@@ -1,0 +1,67 @@
+{
+  "carriers": [
+    {
+      "relationships": [
+        {
+          "to": "decision-001.md",
+          "type": "supersedes"
+        },
+        {
+          "to": "../claims/claim-001.md",
+          "type": "contradicts"
+        },
+        {
+          "to": "../claims/claim-missing.md",
+          "type": "contradicts"
+        }
+      ],
+      "source": "decisions/decision-002"
+    }
+  ],
+  "format": "informative-pgm-to-okf16-projection",
+  "mapping": [
+    {
+      "directionIsOnlyAnAuthoredProperty": false,
+      "entryIndex": 0,
+      "occurrence": 0,
+      "omittedProperties": [],
+      "physicalTarget": "decisions/decision-001",
+      "relationshipId": "pgmrel:v1:sha256:375c299f1e852181b289e5b734fbfe3564dd6524ff5df6484b705c92fac50abb",
+      "relationshipKey": "pgmkey:v1:sha256:9fe7f6d46c8b4a9c3cabc880956e79b06210782f480164ff39c7e7c4f43ee613",
+      "resolved": true,
+      "source": "decisions/decision-002"
+    },
+    {
+      "directionIsOnlyAnAuthoredProperty": false,
+      "entryIndex": 1,
+      "occurrence": 0,
+      "omittedProperties": [],
+      "physicalTarget": "claims/claim-001",
+      "relationshipId": "pgmrel:v1:sha256:6ab0eacd5cc532c675e87c04fc200dbe55c12ea129bff8695361fa64e51013aa",
+      "relationshipKey": "pgmkey:v1:sha256:23675e943f1fcfe7effe7281a4b90d5adf56593a4b1329b1a61f3faf4116e464",
+      "resolved": true,
+      "source": "decisions/decision-002"
+    },
+    {
+      "directionIsOnlyAnAuthoredProperty": false,
+      "entryIndex": 2,
+      "occurrence": 0,
+      "omittedProperties": [],
+      "physicalTarget": "claims/claim-missing",
+      "relationshipId": "pgmrel:v1:sha256:4ede6ad91dd94c10587f8c4f85808e2dd7fb43d06b7e9e30dfa6c6b1de6dffb4",
+      "relationshipKey": "pgmkey:v1:sha256:6d242ad0fdef655f216730d3138f51c6e68c5bc208335e51f2c200d412656b8b",
+      "resolved": false,
+      "source": "decisions/decision-002"
+    }
+  ],
+  "targetReferenceKind": "relative-markdown-path-not-stable-concept-id",
+  "unprojected": [
+    {
+      "reason": "untyped-link-cannot-satisfy-required-type",
+      "relationshipId": "pgmrel:v1:sha256:ea811bae90916c2e20e214d14940b6a29c41dc370df9596abca8bd614228bb56",
+      "source": "decisions/decision-002",
+      "target": "claims/claim-001"
+    }
+  ],
+  "version": 1
+}

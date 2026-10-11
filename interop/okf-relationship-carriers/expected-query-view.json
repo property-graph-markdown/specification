@@ -1,0 +1,70 @@
+{
+  "format": "informative-okf22-query-preview",
+  "registrationStatus": "open-proposal-not-normative-okf-or-pgm-core",
+  "rememberFrontmatterNative": {
+    "references": [
+      {
+        "interpretedType": "supersedes",
+        "queryResult": "unresolved-reference-no-exclusion-or-reverse-view",
+        "sourceId": "okf-conformance-fixture-001",
+        "storedField": "supersedes",
+        "targetId": "okf-conformance-predecessor-000",
+        "targetPresent": false
+      },
+      {
+        "interpretedType": "contradicts",
+        "queryResult": "unresolved-reference-no-exclusion-or-reverse-view",
+        "sourceId": "okf-conformance-fixture-001",
+        "storedField": "contested_by",
+        "targetId": "okf-conformance-disputer-002",
+        "targetPresent": false
+      }
+    ],
+    "rootLogHasResolutionMarkers": false,
+    "sourceHasPgmLinkOccurrences": false
+  },
+  "syntheticPgmLinkNative": {
+    "references": [
+      {
+        "derivedReverse": null,
+        "excludeTargetFromInForce": false,
+        "physicalSource": "decisions/decision-002",
+        "physicalTarget": "decisions/decision-001",
+        "relationshipId": "pgmrel:v1:sha256:375c299f1e852181b289e5b734fbfe3564dd6524ff5df6484b705c92fac50abb",
+        "sourceStableId": "urn:pgm-fixture:decision-002",
+        "state": "proposal-without-affirmation",
+        "storedType": "supersedes",
+        "targetStableId": "urn:pgm-fixture:decision-001"
+      },
+      {
+        "derivedReverse": {
+          "from": "urn:pgm-fixture:decision-002",
+          "on": "urn:pgm-fixture:claim-001",
+          "type": "contradicted_by"
+        },
+        "excludeTargetFromInForce": false,
+        "physicalSource": "decisions/decision-002",
+        "physicalTarget": "claims/claim-001",
+        "relationshipId": "pgmrel:v1:sha256:6ab0eacd5cc532c675e87c04fc200dbe55c12ea129bff8695361fa64e51013aa",
+        "sourceStableId": "urn:pgm-fixture:decision-002",
+        "state": "open-contest",
+        "storedType": "contradicts",
+        "surfaceBoth": true,
+        "targetStableId": "urn:pgm-fixture:claim-001"
+      },
+      {
+        "derivedReverse": null,
+        "excludeTargetFromInForce": false,
+        "physicalSource": "decisions/decision-002",
+        "physicalTarget": "claims/claim-missing",
+        "relationshipId": "pgmrel:v1:sha256:4ede6ad91dd94c10587f8c4f85808e2dd7fb43d06b7e9e30dfa6c6b1de6dffb4",
+        "sourceStableId": "urn:pgm-fixture:decision-002",
+        "state": "unresolved-reference",
+        "storedType": "contradicts",
+        "surfaceBoth": false,
+        "targetStableId": null
+      }
+    ],
+    "rootLogHasResolutionMarkers": false
+  }
+}

@@ -1,0 +1,529 @@
+{
+  "conformance": {
+    "classes": [
+      "PGM Core Processor",
+      "Portable Relationship Identification Processor",
+      "PGM JSON Exchange Processor"
+    ],
+    "diagnosticCategories": {
+      "adapterErrors": "adapter-error",
+      "coreErrors": "error",
+      "warnings": "warning"
+    },
+    "exchangeProfile": "PGM JSON Exchange Profile v1",
+    "markdownProfile": "CommonMark 0.31.2",
+    "okfCommit": "3fcbb9f828c2f23d109c855ee403c3a4c81f3a96",
+    "okfSpecSha256": "5a3311d270bebb16d558010e75064f5b75323f284992641732b1c8097511f948",
+    "processorName": "pgmark",
+    "processorVersion": "0.4.2a1",
+    "schema": "urn:pgm:schema:graph:1",
+    "yamlAliasPolicy": "acyclic-expand-by-value; cycles-rejected",
+    "yamlExplicitTags": [
+      "tag:yaml.org,2002:binary",
+      "tag:yaml.org,2002:set",
+      "tag:yaml.org,2002:timestamp"
+    ],
+    "yamlProfile": "YAML 1.2.2 Core Schema"
+  },
+  "diagnostics": [],
+  "format": "pgm-graph",
+  "formatVersion": "1",
+  "nodes": [
+    {
+      "id": "functions/checkout",
+      "properties": [
+        "pgm-yaml",
+        "v1",
+        [
+          "mapping",
+          [
+            [
+              [
+                "string",
+                "type"
+              ],
+              [
+                "string",
+                "Function"
+              ]
+            ],
+            [
+              [
+                "string",
+                "verified"
+              ],
+              [
+                "mapping",
+                [
+                  [
+                    [
+                      "string",
+                      "at"
+                    ],
+                    [
+                      "string",
+                      "2026-09-01T08:00:00Z"
+                    ]
+                  ],
+                  [
+                    [
+                      "string",
+                      "by"
+                    ],
+                    [
+                      "string",
+                      "human:reviewer"
+                    ]
+                  ]
+                ]
+              ]
+            ]
+          ]
+        ]
+      ],
+      "type": "Function"
+    },
+    {
+      "id": "functions/handler",
+      "properties": [
+        "pgm-yaml",
+        "v1",
+        [
+          "mapping",
+          [
+            [
+              [
+                "string",
+                "type"
+              ],
+              [
+                "string",
+                "Function"
+              ]
+            ]
+          ]
+        ]
+      ],
+      "type": "Function"
+    }
+  ],
+  "pgmVersion": "0.4.0 Public Draft",
+  "relationships": [
+    {
+      "id": "pgmrel:v1:sha256:81e09293528d9336cea999f9f960c6719e629fa507bb2a00d67d3687264a0172",
+      "linkText": "handler",
+      "occurrence": 0,
+      "properties": [
+        "pgm-yaml",
+        "v1",
+        [
+          "mapping",
+          [
+            [
+              [
+                "string",
+                "confidence"
+              ],
+              [
+                "number",
+                "7656119366529843/9007199254740992"
+              ]
+            ],
+            [
+              [
+                "string",
+                "direction"
+              ],
+              [
+                "string",
+                "inbound"
+              ]
+            ],
+            [
+              [
+                "string",
+                "generated"
+              ],
+              [
+                "mapping",
+                [
+                  [
+                    [
+                      "string",
+                      "at"
+                    ],
+                    [
+                      "string",
+                      "2026-09-01T12:00:00Z"
+                    ]
+                  ],
+                  [
+                    [
+                      "string",
+                      "by"
+                    ],
+                    [
+                      "string",
+                      "roteiro/5.0.0"
+                    ]
+                  ]
+                ]
+              ]
+            ],
+            [
+              [
+                "string",
+                "type"
+              ],
+              [
+                "string",
+                "calls"
+              ]
+            ]
+          ]
+        ]
+      ],
+      "relationshipKey": "pgmkey:v1:sha256:28872a83747fb1a443c4e9f88161c7e7c195adf50e1592d85111a5574f126b97",
+      "resolved": true,
+      "source": "functions/checkout",
+      "target": "functions/handler",
+      "title": "{type: calls, direction: inbound, confidence: 0.85, generated: {by: roteiro/5.0.0, at: 2026-09-01T12:00:00Z}}",
+      "type": "calls"
+    },
+    {
+      "id": "pgmrel:v1:sha256:01f0d748978ccba65f5e6d358a1ea5bf2b962baf205e9731a74f2936af055bbe",
+      "linkText": "handler again",
+      "occurrence": 1,
+      "properties": [
+        "pgm-yaml",
+        "v1",
+        [
+          "mapping",
+          [
+            [
+              [
+                "string",
+                "confidence"
+              ],
+              [
+                "number",
+                "7656119366529843/9007199254740992"
+              ]
+            ],
+            [
+              [
+                "string",
+                "direction"
+              ],
+              [
+                "string",
+                "inbound"
+              ]
+            ],
+            [
+              [
+                "string",
+                "generated"
+              ],
+              [
+                "mapping",
+                [
+                  [
+                    [
+                      "string",
+                      "at"
+                    ],
+                    [
+                      "string",
+                      "2026-09-01T12:00:00Z"
+                    ]
+                  ],
+                  [
+                    [
+                      "string",
+                      "by"
+                    ],
+                    [
+                      "string",
+                      "roteiro/5.0.0"
+                    ]
+                  ]
+                ]
+              ]
+            ],
+            [
+              [
+                "string",
+                "type"
+              ],
+              [
+                "string",
+                "calls"
+              ]
+            ]
+          ]
+        ]
+      ],
+      "relationshipKey": "pgmkey:v1:sha256:28872a83747fb1a443c4e9f88161c7e7c195adf50e1592d85111a5574f126b97",
+      "resolved": true,
+      "source": "functions/checkout",
+      "target": "functions/handler",
+      "title": "{type: calls, direction: inbound, confidence: 0.85, generated: {by: roteiro/5.0.0, at: 2026-09-01T12:00:00Z}}",
+      "type": "calls"
+    },
+    {
+      "id": "pgmrel:v1:sha256:b3ee653b12eb98659440acaab6c7d2947c388f4874d81d4f12e420b9d62f4aae",
+      "linkText": "handler, process-reviewed",
+      "occurrence": 0,
+      "properties": [
+        "pgm-yaml",
+        "v1",
+        [
+          "mapping",
+          [
+            [
+              [
+                "string",
+                "confidence"
+              ],
+              [
+                "number",
+                "7656119366529843/9007199254740992"
+              ]
+            ],
+            [
+              [
+                "string",
+                "direction"
+              ],
+              [
+                "string",
+                "inbound"
+              ]
+            ],
+            [
+              [
+                "string",
+                "generated"
+              ],
+              [
+                "mapping",
+                [
+                  [
+                    [
+                      "string",
+                      "at"
+                    ],
+                    [
+                      "string",
+                      "2026-09-01T12:00:00Z"
+                    ]
+                  ],
+                  [
+                    [
+                      "string",
+                      "by"
+                    ],
+                    [
+                      "string",
+                      "roteiro/5.0.0"
+                    ]
+                  ]
+                ]
+              ]
+            ],
+            [
+              [
+                "string",
+                "type"
+              ],
+              [
+                "string",
+                "calls"
+              ]
+            ],
+            [
+              [
+                "string",
+                "verified"
+              ],
+              [
+                "mapping",
+                [
+                  [
+                    [
+                      "string",
+                      "at"
+                    ],
+                    [
+                      "string",
+                      "2026-09-02T08:00:00Z"
+                    ]
+                  ],
+                  [
+                    [
+                      "string",
+                      "by"
+                    ],
+                    [
+                      "string",
+                      "process:ci"
+                    ]
+                  ]
+                ]
+              ]
+            ]
+          ]
+        ]
+      ],
+      "relationshipKey": "pgmkey:v1:sha256:3950aa2ec1bf21a9cd8b787444abf1a41ed71bb7798654650d494465a0381869",
+      "resolved": true,
+      "source": "functions/checkout",
+      "target": "functions/handler",
+      "title": "{type: calls, direction: inbound, confidence: 0.85, generated: {by: roteiro/5.0.0, at: 2026-09-01T12:00:00Z}, verified: {by: process:ci, at: 2026-09-02T08:00:00Z}}",
+      "type": "calls"
+    },
+    {
+      "id": "pgmrel:v1:sha256:58ab5dccf66d1ed7190ccd0caa71df5a0d944900038a4446dd762af062854b37",
+      "linkText": "handler, human-reviewed",
+      "occurrence": 0,
+      "properties": [
+        "pgm-yaml",
+        "v1",
+        [
+          "mapping",
+          [
+            [
+              [
+                "string",
+                "confidence"
+              ],
+              [
+                "number",
+                "7656119366529843/9007199254740992"
+              ]
+            ],
+            [
+              [
+                "string",
+                "direction"
+              ],
+              [
+                "string",
+                "inbound"
+              ]
+            ],
+            [
+              [
+                "string",
+                "generated"
+              ],
+              [
+                "mapping",
+                [
+                  [
+                    [
+                      "string",
+                      "at"
+                    ],
+                    [
+                      "string",
+                      "2026-09-01T12:00:00Z"
+                    ]
+                  ],
+                  [
+                    [
+                      "string",
+                      "by"
+                    ],
+                    [
+                      "string",
+                      "roteiro/5.0.0"
+                    ]
+                  ]
+                ]
+              ]
+            ],
+            [
+              [
+                "string",
+                "type"
+              ],
+              [
+                "string",
+                "calls"
+              ]
+            ],
+            [
+              [
+                "string",
+                "verified"
+              ],
+              [
+                "sequence",
+                [
+                  [
+                    "mapping",
+                    [
+                      [
+                        [
+                          "string",
+                          "at"
+                        ],
+                        [
+                          "string",
+                          "2026-09-02T08:00:00Z"
+                        ]
+                      ],
+                      [
+                        [
+                          "string",
+                          "by"
+                        ],
+                        [
+                          "string",
+                          "process:ci"
+                        ]
+                      ]
+                    ]
+                  ],
+                  [
+                    "mapping",
+                    [
+                      [
+                        [
+                          "string",
+                          "at"
+                        ],
+                        [
+                          "string",
+                          "2026-09-02T09:00:00Z"
+                        ]
+                      ],
+                      [
+                        [
+                          "string",
+                          "by"
+                        ],
+                        [
+                          "string",
+                          "human:alice"
+                        ]
+                      ]
+                    ]
+                  ]
+                ]
+              ]
+            ]
+          ]
+        ]
+      ],
+      "relationshipKey": "pgmkey:v1:sha256:3df157ca0a8692319e42c5af97e3ebfb1f71faf9285997153958213711158a37",
+      "resolved": true,
+      "source": "functions/checkout",
+      "target": "functions/handler",
+      "title": "{type: calls, direction: inbound, confidence: 0.85, generated: {by: roteiro/5.0.0, at: 2026-09-01T12:00:00Z}, verified: [{by: process:ci, at: 2026-09-02T08:00:00Z}, {by: human:alice, at: 2026-09-02T09:00:00Z}]}",
+      "type": "calls"
+    }
+  ]
+}

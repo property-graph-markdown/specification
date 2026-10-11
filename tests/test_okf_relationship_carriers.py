@@ -11,7 +11,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "parser"))
 
-from pgmark import parse_corpus  # noqa: E402
+from pgmark import graph_from_data, graph_to_data, parse_corpus  # noqa: E402
 from relationship_trust import (  # noqa: E402
     RelationshipTrustProfileError,
     relationship_trust_tier,
@@ -19,6 +19,10 @@ from relationship_trust import (  # noqa: E402
 
 
 FIXTURE = ROOT / "interop" / "okf-relationship-carriers"
+sys.path.insert(0, str(FIXTURE))
+from project_pgm import project  # noqa: E402
+from query_view import view as query_view  # noqa: E402
+
 CHECKOUT = "functions/checkout"
 HANDLER = "functions/handler"
 
@@ -61,6 +65,7 @@ class OkfRelationshipCarrierExercise(unittest.TestCase):
     def setUpClass(cls):
         cls.pgm = parse_corpus(FIXTURE / "pgm-links")
         cls.frontmatter = parse_corpus(FIXTURE / "frontmatter-proposal")
+        cls.synthetic = parse_corpus(FIXTURE / "pgm-synthetic-lifecycle" / "bundle")
         cls.expected = json.loads(
             (FIXTURE / "expected-relationship-views.json").read_text(
                 encoding="utf-8"
@@ -165,6 +170,90 @@ class OkfRelationshipCarrierExercise(unittest.TestCase):
             relationship_trust_tier(
                 {"verified": {"by": "human:alice", "at": "2026-09-02"}}
             )
+
+    def test_expected_pgm_reference_json_is_exact_and_round_trips(self):
+        expected = json.loads(
+            (FIXTURE / "expected-pgm-graph.json").read_text(encoding="utf-8")
+        )
+        actual = graph_to_data(self.pgm)
+        self.assertEqual(actual, expected)
+        self.assertEqual(graph_to_data(graph_from_data(expected)), expected)
+        self.assertEqual(expected["pgmVersion"], "0.4.0 Public Draft")
+
+    def test_projection_matches_proposed_frontmatter_common_fields(self):
+        expected = json.loads(
+            (FIXTURE / "expected-projection.json").read_text(encoding="utf-8")
+        )
+        actual = project(self.pgm)
+        self.assertEqual(actual, expected)
+        self.assertEqual(project(self.pgm), actual)
+        self.assertEqual(
+            actual["carriers"],
+            [{
+                "source": CHECKOUT,
+                "relationships": self.frontmatter.nodes[CHECKOUT].properties[
+                    "relationships"
+                ],
+            }],
+        )
+        first, duplicate, process, human = actual["mapping"]
+        self.assertEqual(first["relationshipKey"], duplicate["relationshipKey"])
+        self.assertNotEqual(first["relationshipId"], duplicate["relationshipId"])
+        self.assertEqual([row["entryIndex"] for row in actual["mapping"]], [0, 1, 2, 3])
+        self.assertEqual([row["occurrence"] for row in actual["mapping"]], [0, 1, 0, 0])
+        self.assertTrue(all(row["omittedProperties"] == ["confidence"] for row in actual["mapping"]))
+        self.assertTrue(all(row["directionIsOnlyAnAuthoredProperty"] for row in actual["mapping"]))
+        self.assertNotEqual(process["relationshipKey"], human["relationshipKey"])
+
+    def test_synthetic_lifecycle_projection_shows_non_projectable_cases(self):
+        self.assertEqual(self.synthetic.errors, [])
+        expected = json.loads(
+            (FIXTURE / "expected-synthetic-projection.json").read_text(
+                encoding="utf-8"
+            )
+        )
+        actual = project(self.synthetic)
+        self.assertEqual(actual, expected)
+        entries = actual["carriers"][0]["relationships"]
+        self.assertEqual([entry["type"] for entry in entries], ["supersedes", "contradicts", "contradicts"])
+        self.assertEqual([row["resolved"] for row in actual["mapping"]], [True, True, False])
+        self.assertEqual(len(actual["unprojected"]), 1)
+        self.assertEqual(actual["unprojected"][0]["reason"], "untyped-link-cannot-satisfy-required-type")
+
+    def test_remember_input_is_frontmatter_native_with_no_pgm_link_assertion(self):
+        remember = parse_corpus(FIXTURE / "frontmatter-native-remember" / "bundle")
+        self.assertEqual(remember.errors, [])
+        self.assertEqual(remember.relationships, [])
+        self.assertEqual(project(remember)["carriers"], [])
+        node = next(iter(remember.nodes.values()))
+        self.assertEqual(node.properties["supersedes"], "okf-conformance-predecessor-000")
+        self.assertEqual(node.properties["contested_by"], ["okf-conformance-disputer-002"])
+        self.assertEqual(node.properties["verified"], [])
+
+    def test_query_preview_keeps_open_proposal_and_fail_safe_boundaries(self):
+        expected = json.loads(
+            (FIXTURE / "expected-query-view.json").read_text(encoding="utf-8")
+        )
+        actual = query_view()
+        self.assertEqual(actual, expected)
+        remember = actual["rememberFrontmatterNative"]
+        self.assertFalse(remember["sourceHasPgmLinkOccurrences"])
+        self.assertFalse(remember["rootLogHasResolutionMarkers"])
+        self.assertTrue(all(not row["targetPresent"] for row in remember["references"]))
+        self.assertEqual(remember["references"][1]["storedField"], "contested_by")
+        self.assertEqual(remember["references"][1]["interpretedType"], "contradicts")
+        synthetic = actual["syntheticPgmLinkNative"]
+        self.assertFalse(synthetic["rootLogHasResolutionMarkers"])
+        self.assertTrue(all(not row["excludeTargetFromInForce"] for row in synthetic["references"]))
+        self.assertEqual(
+            synthetic["references"][1]["derivedReverse"],
+            {
+                "on": "urn:pgm-fixture:claim-001",
+                "type": "contradicted_by",
+                "from": "urn:pgm-fixture:decision-002",
+            },
+        )
+        self.assertIsNone(synthetic["references"][2]["derivedReverse"])
 
 
 if __name__ == "__main__":

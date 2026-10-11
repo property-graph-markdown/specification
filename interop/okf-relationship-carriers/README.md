@@ -1,20 +1,27 @@
 # OKF relationship-carrier interoperability exercise
 
-This is an informative, executable comparison for [OKF issue #16](https://github.com/GoogleCloudPlatform/open-knowledge-format/issues/16), not an accepted OKF extension or a change to PGM 0.4.0 Core. The two bundles author the same four relationship *claims* in different places:
+This is an informative, executable comparison for [OKF issue #16](https://github.com/GoogleCloudPlatform/open-knowledge-format/issues/16), not an accepted OKF extension or a change to PGM 0.4.0 Core. The first two bundles author the same four relationship *claims* in different places:
 
 - [`pgm-links/`](pgm-links/) enriches each Markdown Link in place with a YAML Flow Mapping in its ordinary title. These are PGM 0.4.0 Relationship occurrences.
 - [`frontmatter-proposal/`](frontmatter-proposal/) illustrates the proposed `relationships:` list from OKF #16 and retains bare body Links for baseline OKF readers. Current OKF 0.2 does not assign relationship semantics to that list. A PGM 0.4.0 processor preserves it as a Concept Property and sees the four body Links as **untyped** Relationships.
+
+Two more inputs keep a second author's evidence separate: [`frontmatter-native-remember/`](frontmatter-native-remember/SOURCE.md) preserves a commit-pinned, CC0-licensed concept and root log from Andrew Crenshaw's sample bundle. Its `supersedes` and deprecated `contested_by` fields are exporter-authored frontmatter; its prose explicitly has **no links**. [`pgm-synthetic-lifecycle/`](pgm-synthetic-lifecycle/SOURCE.md) is our invented link-native `supersedes`/`contradicts` example, **not** a PGM extraction from his output.
 
 Run from the repository root after installing `parser/requirements.txt` with a supported Python version:
 
 ```sh
 python parser/pgmark.py parse interop/okf-relationship-carriers/pgm-links --format summary
-python parser/pgmark.py parse interop/okf-relationship-carriers/frontmatter-proposal --format summary
-python parser/pgmark.py trust interop/okf-relationship-carriers/pgm-links --json
+python interop/okf-relationship-carriers/project_pgm.py interop/okf-relationship-carriers/pgm-links
+python interop/okf-relationship-carriers/project_pgm.py interop/okf-relationship-carriers/pgm-synthetic-lifecycle/bundle
+python interop/okf-relationship-carriers/query_view.py
 python -m unittest discover -s tests -p 'test_okf_relationship_carriers.py' -v
 ```
 
-The test compares the PGM Core Result with an explicitly **informative comparison view**. It does not implement or claim conformance to a settled OKF relationship carrier.
+The four independently checkable views are the [PGM Markdown source](pgm-links/), [expected PGM reference JSON](expected-pgm-graph.json), [deterministic candidate `relationships:` projection](expected-projection.json), and [informative #22 query preview](expected-query-view.json). The first projection's four list entries equal the separate handwritten [frontmatter example](frontmatter-proposal/functions/checkout.md) field-for-field. Each `mapping` record identifies its authoritative PGM Relationship ID and zero-based list index; repeated equal Links remain two entries with different occurrence IDs. Tests validate the reference JSON round trip and exact snapshots. This exercise does not implement or claim conformance to a settled OKF relationship carrier or query registration.
+
+The projection copies only draft #16's common `type`, `direction`, `generated`, and `verified` fields. It deliberately reports `confidence` as omitted, rather than pretending the candidate list preserves arbitrary PGM Properties; Link text/title are also not fields in that list. Bare untyped Links cannot satisfy draft #16's required `type` and appear under `unprojected`. An unresolved typed Link still projects, with `resolved: false` in the trace. The emitted `to` is a relative Markdown path, **not** the durable concept ID requested in the #16/#22 discussions. PGM Core's bundle-relative path IDs and its occurrence IDs are not substitutes for a stable cross-bundle concept ID. The synthetic example includes explicit `id` properties only to illustrate a separate path-to-ID lookup for the query preview. A real portable bridge must define that resolver and its missing/duplicate-ID behavior before claiming full #22 interoperability. The script is scoped to the fixture's JSON-compatible field values; it does not silently stringify all values in PGM's richer YAML model.
+
+For Andrew's actual frontmatter-native source, the projection is empty because there are no PGM Link assertions. The pinned log has no supersession/dismissal affirmation; both referenced target IDs are absent from the pinned bundle. Under the **proposed**, not adopted, [#22 semantics](https://github.com/GoogleCloudPlatform/open-knowledge-format/issues/22), the query preview therefore excludes nothing and derives no reverse view against a present target. In the invented PGM case, the resolved `supersedes` edge is only a proposal without a readable root-log affirmation, so it excludes nothing. The resolved `contradicts` edge produces a *query-only* `contradicted_by` reverse view; the unresolved one cannot. Neither `verified` nor `generated` on a relationship would serve as an affirmation. `query_view.py` checks only the documented fixtures and the absence of resolution markers; it is not a general #22 log parser or adjudication engine.
 
 ## What the comparison exposes
 
