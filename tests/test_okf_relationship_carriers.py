@@ -1,8 +1,12 @@
 """Informative PGM/OKF #16 carrier comparison, not an OKF conformance profile."""
 
 import json
+import copy
+import hashlib
 import posixpath
+import shutil
 import sys
+import tempfile
 import unittest
 from datetime import datetime
 from pathlib import Path
@@ -21,7 +25,14 @@ from relationship_trust import (  # noqa: E402
 FIXTURE = ROOT / "interop" / "okf-relationship-carriers"
 sys.path.insert(0, str(FIXTURE))
 from project_pgm import project  # noqa: E402
-from query_view import view as query_view  # noqa: E402
+from query_view import (  # noqa: E402
+    _affirming_actors,
+    _pgm_view,
+    _remember_stable_id,
+    _root_supersessions,
+    _unique_stable_id_by_path,
+    view as query_view,
+)
 
 CHECKOUT = "functions/checkout"
 HANDLER = "functions/handler"
@@ -221,14 +232,40 @@ class OkfRelationshipCarrierExercise(unittest.TestCase):
         self.assertEqual(actual["unprojected"][0]["reason"], "untyped-link-cannot-satisfy-required-type")
 
     def test_remember_input_is_frontmatter_native_with_no_pgm_link_assertion(self):
-        remember = parse_corpus(FIXTURE / "frontmatter-native-remember" / "bundle")
-        self.assertEqual(remember.errors, [])
-        self.assertEqual(remember.relationships, [])
-        self.assertEqual(project(remember)["carriers"], [])
-        node = next(iter(remember.nodes.values()))
-        self.assertEqual(node.properties["supersedes"], "okf-conformance-predecessor-000")
-        self.assertEqual(node.properties["contested_by"], ["okf-conformance-disputer-002"])
-        self.assertEqual(node.properties["verified"], [])
+        for folder, contest_field in (
+            ("frontmatter-native-remember", "contested_by"),
+            ("frontmatter-native-remember-current", "contradicts"),
+        ):
+            with self.subTest(folder=folder):
+                remember = parse_corpus(FIXTURE / folder / "bundle")
+                self.assertEqual(remember.errors, [])
+                self.assertEqual(remember.relationships, [])
+                self.assertEqual(project(remember)["carriers"], [])
+                node = next(iter(remember.nodes.values()))
+                self.assertEqual(node.properties["supersedes"], "okf-conformance-predecessor-000")
+                self.assertEqual(node.properties[contest_field], ["okf-conformance-disputer-002"])
+                self.assertNotIn(
+                    "contradicts" if contest_field == "contested_by" else "contested_by",
+                    node.properties,
+                )
+                self.assertEqual(node.properties["verified"], [])
+
+    def test_remember_copied_files_match_both_upstream_pins(self):
+        expected_hashes = {
+            "frontmatter-native-remember": (
+                "e1b85a22821345c9d71ce0cd750f3050407badb593d3d23d4c3c5e05756623a2",
+                "f6940b62145d670ec331b38a590fa15c8b67be9d4d531f8d2d46b7990b84aeba",
+            ),
+            "frontmatter-native-remember-current": (
+                "124116df0e3745101bf0c630366fd58d73ac4b107ff1a66e86b2f5d0b55acc0c",
+                "a1f0a09c00e3c8f8cba7677925ae7a7318051c6128b3f4acb7e599f235e88883",
+            ),
+        }
+        for folder, (concept_hash, log_hash) in expected_hashes.items():
+            bundle = FIXTURE / folder / "bundle"
+            concept = bundle / "facts/okf-v0-2-conformance-fixture-lesson-e-001.md"
+            self.assertEqual(hashlib.sha256(concept.read_bytes()).hexdigest(), concept_hash)
+            self.assertEqual(hashlib.sha256((bundle / "log.md").read_bytes()).hexdigest(), log_hash)
 
     def test_query_preview_keeps_open_proposal_and_fail_safe_boundaries(self):
         expected = json.loads(
@@ -236,15 +273,23 @@ class OkfRelationshipCarrierExercise(unittest.TestCase):
         )
         actual = query_view()
         self.assertEqual(actual, expected)
-        remember = actual["rememberFrontmatterNative"]
-        self.assertFalse(remember["sourceHasPgmLinkOccurrences"])
-        self.assertFalse(remember["rootLogHasResolutionMarkers"])
-        self.assertTrue(all(not row["targetPresent"] for row in remember["references"]))
-        self.assertEqual(remember["references"][1]["storedField"], "contested_by")
-        self.assertEqual(remember["references"][1]["interpretedType"], "contradicts")
+        old = actual["rememberFrontmatterNative"]
+        current = actual["rememberFrontmatterNativeCurrent"]
+        self.assertFalse(old["sourceHasPgmLinkOccurrences"])
+        self.assertFalse(current["sourceHasPgmLinkOccurrences"])
+        self.assertEqual(old["readableRootSupersessions"], [])
+        self.assertEqual(old["references"][1]["storedField"], "contested_by")
+        self.assertEqual(current["references"][1]["storedField"], "contradicts")
+        self.assertEqual(old["references"][1]["interpretedType"], "contradicts")
+        self.assertEqual(current["references"][1]["interpretedType"], "contradicts")
+        self.assertEqual(current["references"][0]["affirmedBy"], ["human:1c8998e4"])
+        self.assertEqual(current["references"][1]["affirmedBy"], [])
+        self.assertTrue(all(not row["targetPresent"] for row in old["references"] + current["references"]))
+        self.assertTrue(all(not row["excludeTargetFromInForce"] for row in old["references"] + current["references"]))
         synthetic = actual["syntheticPgmLinkNative"]
-        self.assertFalse(synthetic["rootLogHasResolutionMarkers"])
+        self.assertEqual(synthetic["readableRootSupersessions"], [])
         self.assertTrue(all(not row["excludeTargetFromInForce"] for row in synthetic["references"]))
+        self.assertEqual(len(synthetic["pairDecisions"]), 2)
         self.assertEqual(
             synthetic["references"][1]["derivedReverse"],
             {
@@ -254,6 +299,108 @@ class OkfRelationshipCarrierExercise(unittest.TestCase):
             },
         )
         self.assertIsNone(synthetic["references"][2]["derivedReverse"])
+
+    def test_remember_id_form_is_explicit_and_pair_match_is_ordered(self):
+        source = _remember_stable_id("okf-conformance-fixture-001")
+        target = _remember_stable_id("okf-conformance-predecessor-000")
+        self.assertEqual(source, "remember://lesson/okf-conformance-fixture-001")
+        with self.assertRaises(ValueError):
+            _remember_stable_id(source)
+        entries = _root_supersessions(FIXTURE / "frontmatter-native-remember-current" / "bundle")
+        self.assertEqual(_affirming_actors(entries, source, target), ["human:1c8998e4"])
+        self.assertEqual(_affirming_actors(entries, target, source), [])
+        self.assertEqual(_affirming_actors(entries, source, _remember_stable_id("other")), [])
+
+    def test_root_log_requires_exact_pair_actor_and_valid_date(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            bundle = Path(temporary)
+            (bundle / "log.md").write_text(
+                "# Directory Update Log\n\n"
+                "## 2026-07-25\n"
+                "* **Supersession**: `src` supersedes `other`. Affirmed by `human:alice`.\n"
+                "* **Supersession**: `target` supersedes `src`. Affirmed by `human:alice`.\n"
+                "* **Supersession**: `src` supersedes `target`. Affirmed by `human:`.\n"
+                "* **Supersession**: `src` supersedes `target`.\n"
+                "## 2026-02-30\n"
+                "* **Supersession**: `src` supersedes `target`. Affirmed by `human:alice`.\n",
+                encoding="utf-8",
+            )
+            entries = _root_supersessions(bundle)
+            self.assertEqual(len(entries), 2)
+            self.assertEqual(_affirming_actors(entries, "src", "target"), [])
+            (bundle / "log.md").unlink()
+            (bundle / "nested").mkdir()
+            (bundle / "nested" / "log.md").write_text(
+                "## 2026-07-25\n"
+                "* **Supersession**: `src` supersedes `target`. Affirmed by `human:alice`.\n",
+                encoding="utf-8",
+            )
+            self.assertEqual(_root_supersessions(bundle), [])
+
+    def test_missing_or_duplicate_stable_ids_fail_closed(self):
+        missing = copy.deepcopy(self.synthetic)
+        missing.nodes["decisions/decision-001"].properties.pop("id")
+        self.assertNotIn("decisions/decision-001", _unique_stable_id_by_path(missing))
+        missing_view = _pgm_view(missing, FIXTURE)
+        self.assertIsNone(missing_view["references"][0]["targetStableId"])
+        self.assertFalse(missing_view["references"][0]["excludeTargetFromInForce"])
+        duplicate = copy.deepcopy(self.synthetic)
+        duplicate.nodes["claims/claim-001"].properties["id"] = "urn:pgm-fixture:decision-001"
+        self.assertNotIn("decisions/decision-001", _unique_stable_id_by_path(duplicate))
+        self.assertNotIn("claims/claim-001", _unique_stable_id_by_path(duplicate))
+        self.assertEqual(_pgm_view(duplicate, FIXTURE)["pairDecisions"], [])
+        duplicate_source = copy.deepcopy(self.synthetic)
+        duplicate_source.nodes["claims/claim-001"].properties["id"] = "urn:pgm-fixture:decision-002"
+        self.assertNotIn("decisions/decision-002", _unique_stable_id_by_path(duplicate_source))
+        self.assertEqual(_pgm_view(duplicate_source, FIXTURE)["pairDecisions"], [])
+
+    def test_present_forward_edge_and_matching_root_entry_are_separate_evidence(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            bundle = Path(temporary)
+            (bundle / "log.md").write_text(
+                "## 2026-07-25\n"
+                "* **Supersession**: `urn:pgm-fixture:decision-002` supersedes "
+                "`urn:pgm-fixture:decision-001`. Affirmed by `human:alice`.\n",
+                encoding="utf-8",
+            )
+            result = _pgm_view(self.synthetic, bundle)
+            self.assertEqual(result["references"][0]["affirmedBy"], ["human:alice"])
+            self.assertEqual(
+                result["pairDecisions"][0]["state"],
+                "affirmed-pair-candidate-subject-to-source-eligibility",
+            )
+            # This preview does not decide source eligibility, hence does not
+            # claim a complete #22 in-force exclusion.
+            self.assertFalse(result["pairDecisions"][0]["excludeTargetFromInForce"])
+            without_edge = copy.deepcopy(self.synthetic)
+            without_edge.nodes["decisions/decision-002"].relationships = [
+                edge for edge in without_edge.nodes["decisions/decision-002"].relationships
+                if edge.type != "supersedes"
+            ]
+            self.assertFalse(any(
+                row["storedType"] == "supersedes"
+                for row in _pgm_view(without_edge, bundle)["pairDecisions"]
+            ))
+
+    def test_duplicate_supersedes_occurrences_are_one_pair_decision(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            bundle = Path(temporary) / "bundle"
+            shutil.copytree(FIXTURE / "pgm-synthetic-lifecycle" / "bundle", bundle)
+            document = bundle / "decisions/decision-002.md"
+            source = document.read_text(encoding="utf-8")
+            link = '- This decision [supersedes decision 001](decision-001.md "{type: supersedes}").\n'
+            self.assertEqual(source.count(link), 1)
+            document.write_text(source.replace(link, link + link, 1), encoding="utf-8")
+            graph = parse_corpus(bundle)
+            self.assertEqual(graph.errors, [])
+            rows = _pgm_view(graph, bundle)
+            supersedes = [row for row in rows["references"] if row["storedType"] == "supersedes"]
+            self.assertEqual(len(supersedes), 2)
+            self.assertNotEqual(supersedes[0]["relationshipId"], supersedes[1]["relationshipId"])
+            decisions = [row for row in rows["pairDecisions"] if row["storedType"] == "supersedes"]
+            self.assertEqual(len(decisions), 1)
+            self.assertEqual(len(decisions[0]["relationshipIds"]), 2)
+            self.assertEqual(len(project(graph)["carriers"][0]["relationships"]), 4)
 
 
 if __name__ == "__main__":

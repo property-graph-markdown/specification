@@ -2,30 +2,99 @@
   "format": "informative-okf22-query-preview",
   "registrationStatus": "open-proposal-not-normative-okf-or-pgm-core",
   "rememberFrontmatterNative": {
+    "readableRootSupersessions": [],
     "references": [
       {
+        "affirmedBy": [],
+        "excludeTargetFromInForce": false,
         "interpretedType": "supersedes",
-        "queryResult": "unresolved-reference-no-exclusion-or-reverse-view",
+        "queryResult": "unaffirmed-and-unresolved-no-exclusion",
         "sourceId": "okf-conformance-fixture-001",
+        "sourceStableId": "remember://lesson/okf-conformance-fixture-001",
         "storedField": "supersedes",
         "targetId": "okf-conformance-predecessor-000",
-        "targetPresent": false
+        "targetPresent": false,
+        "targetStableId": "remember://lesson/okf-conformance-predecessor-000"
       },
       {
+        "affirmedBy": [],
+        "excludeTargetFromInForce": false,
         "interpretedType": "contradicts",
-        "queryResult": "unresolved-reference-no-exclusion-or-reverse-view",
+        "queryResult": "unresolved-contradiction-no-reverse-view",
         "sourceId": "okf-conformance-fixture-001",
+        "sourceStableId": "remember://lesson/okf-conformance-fixture-001",
         "storedField": "contested_by",
         "targetId": "okf-conformance-disputer-002",
-        "targetPresent": false
+        "targetPresent": false,
+        "targetStableId": "remember://lesson/okf-conformance-disputer-002"
       }
     ],
-    "rootLogHasResolutionMarkers": false,
+    "sourceHasPgmLinkOccurrences": false
+  },
+  "rememberFrontmatterNativeCurrent": {
+    "readableRootSupersessions": [
+      {
+        "actor": "human:1c8998e4",
+        "date": "2026-07-25",
+        "source": "remember://lesson/okf-conformance-fixture-001",
+        "target": "remember://lesson/okf-conformance-predecessor-000"
+      }
+    ],
+    "references": [
+      {
+        "affirmedBy": ["human:1c8998e4"],
+        "excludeTargetFromInForce": false,
+        "interpretedType": "supersedes",
+        "queryResult": "affirmed-but-unresolved-target-no-exclusion",
+        "sourceId": "okf-conformance-fixture-001",
+        "sourceStableId": "remember://lesson/okf-conformance-fixture-001",
+        "storedField": "supersedes",
+        "targetId": "okf-conformance-predecessor-000",
+        "targetPresent": false,
+        "targetStableId": "remember://lesson/okf-conformance-predecessor-000"
+      },
+      {
+        "affirmedBy": [],
+        "excludeTargetFromInForce": false,
+        "interpretedType": "contradicts",
+        "queryResult": "unresolved-contradiction-no-reverse-view",
+        "sourceId": "okf-conformance-fixture-001",
+        "sourceStableId": "remember://lesson/okf-conformance-fixture-001",
+        "storedField": "contradicts",
+        "targetId": "okf-conformance-disputer-002",
+        "targetPresent": false,
+        "targetStableId": "remember://lesson/okf-conformance-disputer-002"
+      }
+    ],
     "sourceHasPgmLinkOccurrences": false
   },
   "syntheticPgmLinkNative": {
+    "pairDecisions": [
+      {
+        "excludeTargetFromInForce": false,
+        "relationshipIds": [
+          "pgmrel:v1:sha256:375c299f1e852181b289e5b734fbfe3564dd6524ff5df6484b705c92fac50abb"
+        ],
+        "sourceStableId": "urn:pgm-fixture:decision-002",
+        "state": "proposal-without-affirmation",
+        "storedType": "supersedes",
+        "targetStableId": "urn:pgm-fixture:decision-001"
+      },
+      {
+        "excludeTargetFromInForce": false,
+        "relationshipIds": [
+          "pgmrel:v1:sha256:6ab0eacd5cc532c675e87c04fc200dbe55c12ea129bff8695361fa64e51013aa"
+        ],
+        "sourceStableId": "urn:pgm-fixture:decision-002",
+        "state": "open-contest",
+        "storedType": "contradicts",
+        "targetStableId": "urn:pgm-fixture:claim-001"
+      }
+    ],
+    "readableRootSupersessions": [],
     "references": [
       {
+        "affirmedBy": [],
         "derivedReverse": null,
         "excludeTargetFromInForce": false,
         "physicalSource": "decisions/decision-002",
@@ -64,7 +133,6 @@
         "surfaceBoth": false,
         "targetStableId": null
       }
-    ],
-    "rootLogHasResolutionMarkers": false
+    ]
   }
 }
